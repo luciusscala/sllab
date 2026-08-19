@@ -10,7 +10,6 @@
   --fg: #0a0a0a;
   --muted: #737373;
   --line: #e6e6e6;
-  --faint: #f6f6f6;
   color-scheme: light;
 }
 
@@ -19,7 +18,6 @@
   --fg: #fafafa;
   --muted: #8f8f8f;
   --line: #232323;
-  --faint: #121212;
   color-scheme: dark;
 }
 
@@ -28,13 +26,11 @@
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --color-faint: var(--faint);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
   --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-glide: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 /* --------------------------------------------------------------------------
@@ -49,11 +45,6 @@ html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
-}
-
-/* Inertial JS scrolling takes over; native smooth would fight it. */
-html.has-smooth-scroll {
-  scroll-behavior: auto;
 }
 
 body {
@@ -190,39 +181,6 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Cursor — a lagging ring in difference blend: black on white, white on black
-   -------------------------------------------------------------------------- */
-
-.cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9999;
-  height: 30px;
-  width: 30px;
-  margin: -15px 0 0 -15px;
-  border-radius: 999px;
-  border: 1px solid #fff;
-  mix-blend-mode: difference;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 400ms ease, width 420ms var(--ease-smooth),
-    height 420ms var(--ease-smooth), margin 420ms var(--ease-smooth),
-    background-color 420ms var(--ease-smooth);
-}
-
-.cursor-ring[data-visible="true"] {
-  opacity: 1;
-}
-
-.cursor-ring[data-active="true"] {
-  height: 54px;
-  width: 54px;
-  margin: -27px 0 0 -27px;
-  background: #fff;
-}
-
-/* --------------------------------------------------------------------------
    Motion
    -------------------------------------------------------------------------- */
 
@@ -241,19 +199,6 @@ body {
     opacity: 1;
     filter: blur(0);
     transform: translate3d(0, 0, 0);
-  }
-}
-
-/* Status dot on the landing page */
-@keyframes pulse-dot {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.25;
-    transform: scale(0.75);
   }
 }
 
@@ -279,9 +224,5 @@ body {
 
   .mask-line > span {
     transform: none;
-  }
-
-  .cursor-ring {
-    display: none;
   }
 }

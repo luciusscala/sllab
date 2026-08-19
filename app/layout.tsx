@@ -2,10 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
-import { Cursor } from "@/components/cursor";
-import { SmoothScroll } from "@/components/smooth-scroll";
 import { RevealProvider } from "@/components/reveal-provider";
 import { PageTransition } from "@/components/page-transition";
 import { themeScript } from "@/lib/theme";
@@ -21,10 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Sports Logic Lab",
-    template: "%s — Sllab",
-  },
+  title: "sllab",
   description: "Making film and stats more accessible. In private development.",
 };
 
@@ -50,11 +44,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </noscript>
       </head>
       <body className="flex min-h-full flex-col bg-bg text-fg">
-        <SmoothScroll />
         <RevealProvider />
-        <Cursor />
-        <Nav />
-        <main className="flex-1 pt-[72px]">
+        <main className="flex-1">
           <PageTransition>{children}</PageTransition>
         </main>
         <Footer />
