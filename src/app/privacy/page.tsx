@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-import { SectionHeading } from "@/components/section-heading";
-import { TEAM_EMAIL } from "@/lib/club";
+import { type PolicySection, PolicyPage } from "@/components/policy-page";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -17,7 +16,7 @@ const EFFECTIVE = "September 16, 2026";
  * kept to what it actually does: nothing here is boilerplate about data the
  * app never touches. Written as prose so whoever holds the office can edit it.
  */
-const SECTIONS: { heading: string; paragraphs: string[] }[] = [
+const SECTIONS: PolicySection[] = [
   {
     heading: "What this covers",
     paragraphs: [
@@ -75,33 +74,11 @@ const SECTIONS: { heading: string; paragraphs: string[] }[] = [
 
 export default function PrivacyPage() {
   return (
-    <div className="container-page py-8 sm:py-10">
-      <div className="rounded-xl bg-background p-4 text-foreground sm:p-6">
-        <h1 className="headline text-xl sm:text-2xl">Privacy Policy</h1>
-        <p className="mt-1 text-sm text-muted">Effective {EFFECTIVE}</p>
-
-        {SECTIONS.map((section) => (
-          <section key={section.heading}>
-            <SectionHeading>{section.heading}</SectionHeading>
-            <div className="mt-3 space-y-3 text-sm leading-relaxed sm:text-base">
-              {section.paragraphs.map((paragraph) => (
-                <p key={paragraph.slice(0, 40)}>{paragraph}</p>
-              ))}
-            </div>
-          </section>
-        ))}
-
-        <SectionHeading>Contact</SectionHeading>
-        <p className="mt-3 text-sm leading-relaxed sm:text-base">
-          Questions or requests about your data:{" "}
-          <a
-            href={`mailto:${TEAM_EMAIL}`}
-            className="font-medium text-blue underline underline-offset-4 transition duration-200 ease-out hover:opacity-70 active:opacity-60"
-          >
-            {TEAM_EMAIL}
-          </a>
-        </p>
-      </div>
-    </div>
+    <PolicyPage
+      title="Privacy Policy"
+      effective={EFFECTIVE}
+      sections={SECTIONS}
+      contactLabel="Questions or requests about your data:"
+    />
   );
 }

@@ -1,6 +1,5 @@
 "use server";
 
-import { timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { EVENT_TYPE } from "@/lib/data/events";
@@ -13,17 +12,18 @@ import {
 } from "@/lib/data/events-write";
 import { type AvailabilityStatus, isStatus } from "@/lib/data/availability";
 import {
-  getAdminCode,
   getCurrentSeason,
   getEvent,
   getRoster,
   getTeamByCode,
 } from "@/lib/data/team";
 import { fromDateTimeLocal } from "@/lib/format";
+import { deliverReminder } from "@/lib/reminders";
 import { requireAdminClient } from "@/lib/supabase-admin";
 import { teamRedirect } from "@/lib/team-path";
 import {
   clearTeamSession,
+  isAdminCode,
   readTeamSession,
   requireCaptain,
   requireTeamSession,
@@ -59,12 +59,6 @@ async function findMe(rosterId: string) {
 /** Every page under /team, in one call. Writes here are small enough that
  *  refreshing the whole section beats tracking which page shows what. */
 const revalidateTeam = () => revalidatePath("/team", "layout");
-
-const safeEqual = (a: string, b: string) => {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
-};
 
 // MARK: Onboarding — the app's TeamSelection → RosterSelection → PhoneNumberEntry
 
@@ -121,6 +115,11 @@ export async function savePhone(_state: ActionState, data: FormData) {
   const phone = digits(data);
   const complaint = badPhone(phone);
   if (complaint) return { error: complaint };
+
+  // A number is only kept with the box ticked: that tick is the SMS opt-in.
+  if (phone && data.get("sms_consent") !== "on") {
+    return { error: "Tick the box to get text reminders, or leave the number blank." };
+  }
 
   if (phone) {
     const member = await findMe(session.rosterId);
@@ -244,8 +243,7 @@ export async function unlockCaptain(_state: ActionState, data: FormData) {
   const code = text(data, "admin_code");
   if (!code) return { error: "Enter the admin code." };
 
-  const expected = await getAdminCode(session.teamId);
-  if (!expected || !safeEqual(code, expected)) {
+  if (!(await isAdminCode(session.teamId, code))) {
     return { error: "Invalid admin code." };
   }
 
@@ -456,53 +454,18 @@ export async function deleteEvent(_state: ActionState, data: FormData) {
 
 // MARK: Captain — reminders
 
-/**
- * Where the SMS backend lives. A placeholder until the FastAPI service is
- * deployed, exactly as `MessageService.baseURL` is in the app; the request
- * shape matches its `/send-sms` too, so both clients move together.
- */
-const MESSAGE_API_URL =
-  process.env.MESSAGE_API_URL ?? "https://your-api.railway.app";
+export type ReminderState = { error?: string; sent?: number; failed?: number } | null;
 
-export type ReminderState = { error?: string; sent?: number } | null;
-
+/** The web composer's Send. The app reaches the same `deliverReminder` through `/api/reminders`. */
 export async function sendReminder(
   _state: ReminderState,
   data: FormData,
 ): Promise<ReminderState> {
-  const session = await requireCaptain();
+  await requireCaptain();
 
-  const message = text(data, "message");
-  if (!message) return { error: "Write a message." };
+  const rosterIds = data
+    .getAll("roster_id")
+    .filter((value): value is string => typeof value === "string");
 
-  const rosterIds = new Set(
-    data.getAll("roster_id").filter((value): value is string => typeof value === "string"),
-  );
-  if (rosterIds.size === 0) return { error: "Select at least one player." };
-
-  const season = await getCurrentSeason();
-  const roster = season ? await getRoster(season.id) : [];
-  const phones = roster
-    .filter((member) => rosterIds.has(member.rosterId))
-    .map((member) => member.phone)
-    .filter((phone): phone is string => Boolean(phone));
-  if (phones.length === 0) return { error: "None of the selected players has a phone number." };
-
-  let response: Response;
-  try {
-    response = await fetch(`${MESSAGE_API_URL}/send-sms`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ team_id: session.teamId, phones, message }),
-    });
-  } catch (error) {
-    return { error: `Could not reach the messaging server: ${(error as Error).message}` };
-  }
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    return { error: `Server error: ${body || response.statusText}` };
-  }
-
-  return { sent: phones.length };
+  return deliverReminder(rosterIds, text(data, "message") ?? "");
 }

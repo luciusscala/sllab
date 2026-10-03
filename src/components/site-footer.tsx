@@ -45,6 +45,12 @@ export function SiteFooter() {
               Privacy
             </Link>
             <Link
+              href="/terms"
+              className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
+            >
+              Terms
+            </Link>
+            <Link
               href="/team"
               className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
             >

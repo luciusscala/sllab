@@ -3,18 +3,22 @@ import { cookies } from "next/headers";
 
 import "server-only";
 
+import { getAdminCode } from "@/lib/data/team";
 import { teamRedirect } from "@/lib/team-path";
 
 /**
  * The web counterpart of the iOS app's `@AppStorage` keys (`teamID`,
- * `rosterID`, `phoneEntered`, `isAdmin`). There is no login: a player joins
- * with the team code, picks their own name off the roster, and enters a phone
- * number. What the app keeps on the device, the site keeps in one signed
- * cookie, so the browser can't forge a roster id or promote itself to captain.
+ * `rosterID`, `phoneEntered`). There is no login: a player joins with the
+ * team code, picks their own name off the roster, and enters a phone number.
+ * What the app keeps on the device, the site keeps in one signed cookie, so
+ * the browser can't forge a roster id or promote itself to captain.
  *
- * Signed with the same secret as the admin session; the two cookies are
- * otherwise unrelated. Captains are identified by `teams.admin_code`, the code
- * they already use in the app, not by the website's admin password.
+ * The app carries the same signed value as a bearer token for the endpoints
+ * under `/api`, so one format, one secret and one check serve both clients.
+ *
+ * Signed with the same secret as the admin session; the two are otherwise
+ * unrelated. Captains are identified by `teams.admin_code`, not by the
+ * website's admin password.
  */
 const COOKIE = "team_session";
 
@@ -45,33 +49,19 @@ function safeEqual(a: string, b: string) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-/** Cookie value is `<base64url payload>.<hmac>`. */
-export async function writeTeamSession(session: TeamSession) {
+/** `<base64url payload>.<hmac>` — the cookie's value and the app's token. */
+export function encodeSession(session: TeamSession) {
   const stored: Stored = {
     ...session,
     expiresAt: Date.now() + MAX_AGE_SECONDS * 1000,
   };
   const payload = Buffer.from(JSON.stringify(stored)).toString("base64url");
-
-  (await cookies()).set(COOKIE, `${payload}.${sign(payload)}`, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: MAX_AGE_SECONDS,
-  });
+  return `${payload}.${sign(payload)}`;
 }
 
-export async function clearTeamSession() {
-  (await cookies()).delete(COOKIE);
-}
-
-/** The session as stored, or null when absent, tampered with, or expired. */
-export async function readTeamSession(): Promise<TeamSession | null> {
-  const raw = (await cookies()).get(COOKIE)?.value;
-  if (!raw) return null;
-
-  const [payload, signature] = raw.split(".");
+/** The session a token carries, or null when it is tampered with or expired. */
+export function decodeSession(token: string): TeamSession | null {
+  const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
   if (!safeEqual(signature, sign(payload))) return null;
 
@@ -90,6 +80,38 @@ export async function readTeamSession(): Promise<TeamSession | null> {
   } catch {
     return null;
   }
+}
+
+export async function writeTeamSession(session: TeamSession) {
+  (await cookies()).set(COOKIE, encodeSession(session), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: MAX_AGE_SECONDS,
+  });
+}
+
+export async function clearTeamSession() {
+  (await cookies()).delete(COOKIE);
+}
+
+/** The session as stored, or null when absent, tampered with, or expired. */
+export async function readTeamSession(): Promise<TeamSession | null> {
+  const raw = (await cookies()).get(COOKIE)?.value;
+  return raw ? decodeSession(raw) : null;
+}
+
+/** The app's side of the same session: `Authorization: Bearer <token>`. */
+export function readBearerSession(request: Request): TeamSession | null {
+  const [scheme, token] = (request.headers.get("authorization") ?? "").split(" ");
+  return scheme === "Bearer" && token ? decodeSession(token) : null;
+}
+
+/** Whether `code` is the team's captain code. Constant-time, so it can't be probed. */
+export async function isAdminCode(teamId: string, code: string) {
+  const expected = await getAdminCode(teamId);
+  return expected !== null && safeEqual(code, expected);
 }
 
 /** A session that has finished every onboarding step. */

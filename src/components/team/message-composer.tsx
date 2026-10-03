@@ -57,6 +57,7 @@ export function MessageComposer({
         <p className="headline text-lg">Sent</p>
         <p className="mt-1 text-sm text-muted">
           Reminder sent to {state.sent} {state.sent === 1 ? "player" : "players"}.
+          {state.failed ? ` ${state.failed} couldn’t be reached.` : ""}
         </p>
         <Link
           href={backHref}

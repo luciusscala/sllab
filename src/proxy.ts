@@ -64,8 +64,9 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything but Next's own build output and the files in /public, which
-  // are the same on both hosts and have no business being rewritten. Those
-  // all carry an extension; no page here does.
-  matcher: ["/((?!_next/|.*\\.[^/]*$).*)"],
+  // Everything but Next's own build output, the files in /public, the app's
+  // JSON endpoints under /api, and /.well-known (Apple refuses a redirected
+  // association file). Those are the same on both hosts and have no business
+  // being rewritten. Public files all carry an extension; no page here does.
+  matcher: ["/((?!_next/|api/|\\.well-known/|.*\\.[^/]*$).*)"],
 };
