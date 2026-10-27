@@ -4,15 +4,18 @@ import { createGame } from "@/app/team/actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { GameFields } from "@/components/team/event-fields";
 import { FormCard } from "@/components/team/form-card";
-import { listFields, listTeams } from "@/lib/data/admin";
+import { listFields, listOpponents } from "@/lib/data/admin";
 import { teamBase } from "@/lib/team-path";
 import { requireCaptain } from "@/lib/team-session";
 
 export const metadata: Metadata = { title: "Add Game" };
 
 export default async function NewGamePage() {
-  await requireCaptain();
-  const [fields, teams] = await Promise.all([listFields(), listTeams()]);
+  const session = await requireCaptain();
+  const [fields, teams] = await Promise.all([
+    listFields(),
+    listOpponents(session.teamId),
+  ]);
 
   return (
     <FormCard title="Add Game" cancelHref={(await teamBase()) || "/"}>

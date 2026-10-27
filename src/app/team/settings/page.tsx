@@ -18,7 +18,7 @@ export default async function TeamSettingsPage() {
 
   const season = await getCurrentSeason();
   const me = season
-    ? (await getRoster(season.id)).find((member) => member.rosterId === session.rosterId)
+    ? (await getRoster(season.id, session.teamId)).find((member) => member.rosterId === session.rosterId)
     : undefined;
 
   return (

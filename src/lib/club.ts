@@ -18,6 +18,15 @@ export const OFFICERS = [
 
 export const TEAM_EMAIL = "ucsdmcs@gmail.com";
 
+/**
+ * The club's own `teams.id` — the one exception to the rule above. Games name
+ * a home and an away team rather than "us" and an opponent, and events and
+ * roster rows carry the team they belong to, so the public pages and the admin
+ * dashboard need to know which team is ours. The team section reads it from
+ * the session instead, as the app does.
+ */
+export const CLUB_TEAM_ID = "61ff9ad9-b8a3-42f7-835e-2113a4c672cd";
+
 export const ACCOLADES = [
   "NIRSA Open Division National Champions",
   "NIRSA Regional VI Champions",

@@ -17,6 +17,7 @@ import {
   getRoster,
   getTeamByCode,
 } from "@/lib/data/team";
+import { sidesFor } from "@/lib/data/schedule";
 import { fromDateTimeLocal } from "@/lib/format";
 import { deliverReminder } from "@/lib/reminders";
 import { requireAdminClient } from "@/lib/supabase-admin";
@@ -50,10 +51,10 @@ const badPhone = (phone: string) =>
   phone && phone.length < 10 ? "Enter a 10-digit phone number." : null;
 
 /** The caller's own row in `people`, which is where a profile edit lands. */
-async function findMe(rosterId: string) {
+async function findMe(rosterId: string, teamId: string) {
   const season = await getCurrentSeason();
   if (!season) return undefined;
-  return (await getRoster(season.id)).find((entry) => entry.rosterId === rosterId);
+  return (await getRoster(season.id, teamId)).find((entry) => entry.rosterId === rosterId);
 }
 
 /** Every page under /team, in one call. Writes here are small enough that
@@ -90,7 +91,7 @@ export async function selectRoster(data: FormData) {
   const rosterId = text(data, "roster_id");
   const season = await getCurrentSeason();
   const member = season
-    ? (await getRoster(season.id)).find((entry) => entry.rosterId === rosterId)
+    ? (await getRoster(season.id, session.teamId)).find((entry) => entry.rosterId === rosterId)
     : undefined;
   if (!member) return teamRedirect("/join/roster");
 
@@ -122,7 +123,7 @@ export async function savePhone(_state: ActionState, data: FormData) {
   }
 
   if (phone) {
-    const member = await findMe(session.rosterId);
+    const member = await findMe(session.rosterId, session.teamId);
     if (!member) return { error: "Your roster entry could not be found." };
 
     const { error } = await requireAdminClient()
@@ -184,7 +185,7 @@ export async function bulkAction(_state: ActionState, data: FormData) {
     if (!session.captain) return { error: "Only captains can delete events." };
 
     for (const eventId of eventIds) {
-      const event = await getEvent(eventId);
+      const event = await getEvent(eventId, session.teamId);
       if (!event) continue;
       const error = await deleteWithEvent(TABLE_FOR[event.type], eventId);
       if (error) return { error };
@@ -224,7 +225,7 @@ export async function updateProfile(_state: ActionState, data: FormData) {
   const complaint = badPhone(phone);
   if (complaint) return { error: complaint };
 
-  const member = await findMe(session.rosterId);
+  const member = await findMe(session.rosterId, session.teamId);
   if (!member) return { error: "Your roster entry could not be found." };
 
   const { error } = await requireAdminClient()
@@ -284,14 +285,17 @@ const practiceColumns = (data: FormData) => ({
   notes: text(data, "notes"),
 });
 
-const gameColumns = (data: FormData) => ({
-  opponent_id: text(data, "opponent_id"),
+/** The app's game form has no scores, so `sidesFor` leaves them untouched. */
+const gameColumns = (data: FormData, teamId: string) => ({
+  ...sidesFor(teamId, {
+    opponentId: text(data, "opponent_id"),
+    isHome: data.get("is_home") === "on",
+  }),
   field_id: text(data, "field_id"),
-  is_home: data.get("is_home") === "on",
 });
 
 export async function createPractice(_state: ActionState, data: FormData) {
-  await requireCaptain();
+  const session = await requireCaptain();
 
   const season = await getCurrentSeason();
   if (!season) return { error: "No current season." };
@@ -303,6 +307,7 @@ export async function createPractice(_state: ActionState, data: FormData) {
   const error = await insertWithEvent(
     "practices",
     EVENT_TYPE.practice,
+    session.teamId,
     season.id,
     date,
     practiceColumns(data),
@@ -319,7 +324,7 @@ export async function createPractice(_state: ActionState, data: FormData) {
  * each one is then pinned to the team's zone like any other form date.
  */
 export async function createRepeatingPractices(_state: ActionState, data: FormData) {
-  await requireCaptain();
+  const session = await requireCaptain();
 
   const season = await getCurrentSeason();
   if (!season) return { error: "No current season." };
@@ -359,6 +364,7 @@ export async function createRepeatingPractices(_state: ActionState, data: FormDa
     const error = await insertWithEvent(
       "practices",
       EVENT_TYPE.practice,
+      session.teamId,
       season.id,
       date,
       columns,
@@ -371,7 +377,7 @@ export async function createRepeatingPractices(_state: ActionState, data: FormDa
 }
 
 export async function createGame(_state: ActionState, data: FormData) {
-  await requireCaptain();
+  const session = await requireCaptain();
 
   const season = await getCurrentSeason();
   if (!season) return { error: "No current season." };
@@ -385,9 +391,10 @@ export async function createGame(_state: ActionState, data: FormData) {
   const error = await insertWithEvent(
     "games",
     EVENT_TYPE.game,
+    session.teamId,
     season.id,
     date,
-    gameColumns(data),
+    gameColumns(data, session.teamId),
   );
   if (error) return { error };
 
@@ -418,7 +425,7 @@ export async function updatePractice(_state: ActionState, data: FormData) {
 }
 
 export async function updateGame(_state: ActionState, data: FormData) {
-  await requireCaptain();
+  const session = await requireCaptain();
 
   const eventId = text(data, "event_id");
   if (!eventId) return { error: "Missing game." };
@@ -429,7 +436,7 @@ export async function updateGame(_state: ActionState, data: FormData) {
   const date = dateTime(data, "date");
   if (!date) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("games", eventId, date, gameColumns(data));
+  const error = await updateWithEvent("games", eventId, date, gameColumns(data, session.teamId));
   if (error) return { error };
 
   revalidatePublic();
@@ -438,10 +445,10 @@ export async function updateGame(_state: ActionState, data: FormData) {
 }
 
 export async function deleteEvent(_state: ActionState, data: FormData) {
-  await requireCaptain();
+  const session = await requireCaptain();
 
   const eventId = text(data, "event_id");
-  const event = eventId ? await getEvent(eventId) : null;
+  const event = eventId ? await getEvent(eventId, session.teamId) : null;
   if (!eventId || !event) return { error: "Missing event." };
 
   const error = await deleteWithEvent(TABLE_FOR[event.type], eventId);
@@ -461,11 +468,11 @@ export async function sendReminder(
   _state: ReminderState,
   data: FormData,
 ): Promise<ReminderState> {
-  await requireCaptain();
+  const session = await requireCaptain();
 
   const rosterIds = data
     .getAll("roster_id")
     .filter((value): value is string => typeof value === "string");
 
-  return deliverReminder(rosterIds, text(data, "message") ?? "");
+  return deliverReminder(session.teamId, rosterIds, text(data, "message") ?? "");
 }

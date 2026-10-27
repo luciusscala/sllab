@@ -1,5 +1,6 @@
 import { cache } from "react";
 
+import { CLUB_TEAM_ID } from "@/lib/club";
 import { cached } from "@/lib/data/cache";
 import { one, supabase } from "@/lib/supabase";
 
@@ -9,8 +10,8 @@ export type Season = {
 };
 
 /**
- * Tables displayed a season at a time. `roster` carries `season_id` itself;
- * the rest reach their season through the event they are scheduled on.
+ * Tables displayed a season at a time. `roster` carries `season_id` and
+ * `team_id` itself; the rest reach both through the event they hang off.
  */
 export type SeasonScopedTable =
   | "games"
@@ -24,16 +25,20 @@ type SeasonRow = Season & { is_current: boolean };
 type Client = NonNullable<typeof supabase>;
 
 /**
- * Ids of every season a table has rows for. Takes the client as an argument
- * so the admin, which resolves its season the same way, can run it with its
- * own write client.
+ * Ids of every season a table has rows for, for one team. Takes the client as
+ * an argument so the admin, which resolves its season the same way, can run it
+ * with its own write client.
  */
 export async function populatedSeasons(
   client: Client,
   table: SeasonScopedTable,
+  teamId: string,
 ): Promise<Set<string>> {
   if (table === "roster") {
-    const { data, error } = await client.from("roster").select("season_id");
+    const { data, error } = await client
+      .from("roster")
+      .select("season_id")
+      .eq("team_id", teamId);
     if (error) throw new Error(`Failed to load roster seasons: ${error.message}`);
     return new Set(
       ((data ?? []) as { season_id: string }[]).map((row) => row.season_id),
@@ -44,7 +49,8 @@ export async function populatedSeasons(
   // show either.
   const { data, error } = await client
     .from(table)
-    .select("event:events!inner(season_id)");
+    .select("event:events!inner(season_id)")
+    .eq("event.team_id", teamId);
   if (error) throw new Error(`Failed to load ${table} seasons: ${error.message}`);
 
   return new Set(
@@ -97,7 +103,7 @@ export const getSeasonFor = cache(
         .from("seasons")
         .select("id, year, is_current")
         .order("year", { ascending: false }),
-      populatedSeasons(supabase, table),
+      populatedSeasons(supabase, table, CLUB_TEAM_ID),
     ]);
 
     if (seasons.error) {

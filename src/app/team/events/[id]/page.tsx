@@ -33,11 +33,11 @@ export default async function EventPage(props: PageProps<"/team/events/[id]">) {
   const base = await teamBase();
   const { id } = await props.params;
 
-  const [event, season] = await Promise.all([getEvent(id), getCurrentSeason()]);
+  const [event, season] = await Promise.all([getEvent(id, session.teamId), getCurrentSeason()]);
   if (!event) notFound();
 
   const [roster, availability] = await Promise.all([
-    season ? getRoster(season.id) : [],
+    season ? getRoster(season.id, session.teamId) : [],
     getAvailability([event.id]),
   ]);
   const responses = availability.get(event.id) ?? [];

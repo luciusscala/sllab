@@ -50,6 +50,7 @@ export type Columns = Record<string, string | number | boolean | null>;
 export async function insertWithEvent(
   table: EventTable,
   eventType: EventType,
+  teamId: string,
   seasonId: string,
   date: string,
   columns: Columns,
@@ -58,7 +59,12 @@ export async function insertWithEvent(
 
   const { data: event, error: eventError } = await client
     .from("events")
-    .insert({ season_id: seasonId, event_type: eventType, event_date: date })
+    .insert({
+      team_id: teamId,
+      season_id: seasonId,
+      event_type: eventType,
+      event_date: date,
+    })
     .select("id")
     .single();
 

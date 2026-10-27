@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   // Only sign a roster entry that exists, as the web's `selectRoster` does.
   const season = await getCurrentSeason();
-  const roster = season ? await getRoster(season.id) : [];
+  const roster = season ? await getRoster(season.id, teamId) : [];
   if (!roster.some((member) => member.rosterId === rosterId)) {
     return Response.json(
       { error: "Your roster entry could not be found." },

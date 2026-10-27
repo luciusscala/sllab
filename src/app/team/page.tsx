@@ -26,7 +26,7 @@ export default async function TeamSchedulePage() {
   const base = await teamBase();
 
   const season = await getCurrentSeason();
-  const events = season ? await getUpcomingEvents(season.id) : [];
+  const events = season ? await getUpcomingEvents(season.id, session.teamId) : [];
   const availability = await getAvailability(events.map((event) => event.id));
 
   const groups: ScheduleGroup[] = groupByDay(events).map((group) => ({

@@ -1,6 +1,13 @@
 import type { AvailabilityStatus } from "@/lib/data/availability";
 import { compareNumbers } from "@/lib/data/roster";
-import { fieldLabel } from "@/lib/data/schedule";
+import {
+  type Sides,
+  SIDES,
+  bothTeams,
+  fieldLabel,
+  opponentOf,
+  sideOf,
+} from "@/lib/data/schedule";
 import type { EventType } from "@/lib/data/events";
 import { dayKey, formatDayHeading } from "@/lib/format";
 import { logoUrl, one } from "@/lib/supabase";
@@ -17,6 +24,10 @@ import "server-only";
  *
  * Where the app fetches one subtype and one availability list per event, the
  * site fetches each table once for the whole schedule.
+ *
+ * Every read takes the session's team id, as the app's `currentTeamId` does:
+ * roster and events rows belong to a team, and a game reads as home or away
+ * depending on whose side it's seen from.
  */
 
 export type { AvailabilityStatus } from "@/lib/data/availability";
@@ -58,7 +69,7 @@ export type TeamEvent = {
   isHome: boolean | null;
   /** What the edit forms need, present only for the matching type. */
   practice: { fieldId: string; notes: string | null } | null;
-  game: { opponentId: string | null; fieldId: string | null; isHome: boolean } | null;
+  game: { opponentId: string; fieldId: string | null; isHome: boolean } | null;
 };
 
 const client = () => requireAdminClient();
@@ -117,11 +128,12 @@ type RosterRow = {
 };
 
 /** The season's squad, by number with unnumbered players last, then by name. */
-export async function getRoster(seasonId: string): Promise<Member[]> {
+export async function getRoster(seasonId: string, teamId: string): Promise<Member[]> {
   const { data, error } = await client()
     .from("roster")
     .select("id, number, person:people(id, name, hometown, phone)")
-    .eq("season_id", seasonId);
+    .eq("season_id", seasonId)
+    .eq("team_id", teamId);
 
   if (error) throw new Error(`Failed to load roster: ${error.message}`);
 
@@ -163,13 +175,14 @@ type PracticeRow = {
   field: FieldEmbed;
 };
 
-type GameRow = {
+type TeamEmbed = { name: string; logo_path: string | null } | null;
+
+type GameRow = Sides & {
   event_id: string;
-  opponent_id: string | null;
   field_id: string | null;
-  is_home: boolean;
   field: FieldEmbed;
-  opponent: { name: string; logo_path: string | null } | null;
+  home_team: TeamEmbed;
+  away_team: TeamEmbed;
 };
 
 type SocialRow = { event_id: string; name: string };
@@ -184,8 +197,9 @@ type TournamentRow = {
 /**
  * Fills in the subtype half of each event. One query per subtype table,
  * filtered to the ids at hand, rather than one per event as the app does.
+ * `teamId` is whose side a game is read from.
  */
-async function withSubtypes(rows: EventRow[]): Promise<TeamEvent[]> {
+async function withSubtypes(rows: EventRow[], teamId: string): Promise<TeamEvent[]> {
   if (rows.length === 0) return [];
 
   const idsOf = (type: EventType) =>
@@ -212,7 +226,7 @@ async function withSubtypes(rows: EventRow[]): Promise<TeamEvent[]> {
     ),
     query<GameRow>(
       "games",
-      "event_id, opponent_id, field_id, is_home, field:fields(name, area, maps_address), opponent:teams!games_opponent_id_fkey(name, logo_path)",
+      `event_id, ${SIDES}, field_id, field:fields(name, area, maps_address), ${bothTeams("name, logo_path")}`,
       idsOf("game"),
     ),
     query<SocialRow>("social_events", "event_id, name", idsOf("social")),
@@ -264,16 +278,17 @@ async function withSubtypes(rows: EventRow[]): Promise<TeamEvent[]> {
       case "game": {
         const game = gameOf.get(row.id);
         const field = one(game?.field);
-        const opponent = one(game?.opponent);
-        const isHome = game?.is_home ?? true;
+        const side = game ? sideOf(game, teamId) : null;
+        const isHome = side?.isHome ?? true;
+        const opponent = game ? opponentOf(game, isHome) : null;
         event.title = `${isHome ? "vs." : "@"} ${opponent?.name ?? "TBD"}`;
         event.location = field ? fieldLabel(field) : null;
         event.address = field?.maps_address ?? null;
         event.opponentLogo = logoUrl(opponent?.logo_path ?? null);
         event.isHome = isHome;
-        if (game) {
+        if (game && side) {
           event.game = {
-            opponentId: game.opponent_id,
+            opponentId: side.opponentId,
             fieldId: game.field_id,
             isHome,
           };
@@ -299,32 +314,40 @@ async function withSubtypes(rows: EventRow[]): Promise<TeamEvent[]> {
 }
 
 /** Everything from now on in the current season, soonest first. */
-export async function getUpcomingEvents(seasonId: string): Promise<TeamEvent[]> {
+export async function getUpcomingEvents(
+  seasonId: string,
+  teamId: string,
+): Promise<TeamEvent[]> {
   const { data, error } = await client()
     .from("events")
     .select("id, event_type, event_date")
     .eq("season_id", seasonId)
+    .eq("team_id", teamId)
     .gte("event_date", new Date().toISOString())
     .order("event_date");
 
   if (error) throw new Error(`Failed to load events: ${error.message}`);
-  return withSubtypes((data ?? []) as EventRow[]);
+  return withSubtypes((data ?? []) as EventRow[], teamId);
 }
 
 /**
  * One event by id, past or future. The app only ever lists upcoming events,
  * but a reminder link can outlive the event it points at, and a page that
- * still renders beats one that spins.
+ * still renders beats one that spins. Another team's event reads as missing.
  */
-export async function getEvent(eventId: string): Promise<TeamEvent | null> {
+export async function getEvent(
+  eventId: string,
+  teamId: string,
+): Promise<TeamEvent | null> {
   const { data, error } = await client()
     .from("events")
     .select("id, event_type, event_date")
     .eq("id", eventId)
+    .eq("team_id", teamId)
     .limit(1);
 
   if (error) throw new Error(`Failed to load event: ${error.message}`);
-  const [event] = await withSubtypes((data ?? []) as EventRow[]);
+  const [event] = await withSubtypes((data ?? []) as EventRow[], teamId);
   return event ?? null;
 }
 

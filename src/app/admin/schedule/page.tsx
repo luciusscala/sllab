@@ -5,7 +5,8 @@ import { AdminForm } from "@/components/admin/admin-form";
 import { SeasonPicker } from "@/components/season-picker";
 import { SetupNotice } from "@/components/admin/setup-notice";
 import { requireAdmin } from "@/lib/admin-auth";
-import { adminSeason, listFields, listGames, listTeams } from "@/lib/data/admin";
+import { CLUB_TEAM_ID } from "@/lib/club";
+import { adminSeason, listFields, listGames, listOpponents } from "@/lib/data/admin";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 
@@ -20,7 +21,7 @@ export default async function AdminSchedulePage(
   const params = await props.searchParams;
   const [{ seasons, season }, teams, fields] = await Promise.all([
     adminSeason("games", params.season),
-    listTeams(),
+    listOpponents(CLUB_TEAM_ID),
     listFields(),
   ]);
   const games = season ? await listGames(season.id) : [];

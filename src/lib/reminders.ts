@@ -14,6 +14,7 @@ export type ReminderResult = { error: string } | { sent: number; failed: number 
  * squad can be texted through this.
  */
 export async function deliverReminder(
+  teamId: string,
   rosterIds: string[],
   message: string,
 ): Promise<ReminderResult> {
@@ -23,7 +24,7 @@ export async function deliverReminder(
 
   const chosen = new Set(rosterIds);
   const season = await getCurrentSeason();
-  const roster = season ? await getRoster(season.id) : [];
+  const roster = season ? await getRoster(season.id, teamId) : [];
   const phones = roster
     .filter((member) => chosen.has(member.rosterId))
     .flatMap((member) => (member.phone ? [member.phone] : []));

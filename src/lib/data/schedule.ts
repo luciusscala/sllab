@@ -1,20 +1,90 @@
+import { CLUB_TEAM_ID } from "@/lib/club";
 import { cached } from "@/lib/data/cache";
 import { getSeasonFor } from "@/lib/data/season";
 import { logoUrl, one, supabase } from "@/lib/supabase";
 
 /**
+ * The `games` columns naming both sides. A game is stored as home against
+ * away, not as us against an opponent, so every reader turns it around to one
+ * team's point of view with `sideOf()`.
+ */
+export type Sides = {
+  home_team_id: string;
+  away_team_id: string;
+  home_team_score: number | null;
+  away_team_score: number | null;
+};
+
+export const SIDES = "home_team_id, away_team_id, home_team_score, away_team_score";
+
+/**
+ * Embeds both teams. `games` has two foreign keys to `teams`, so each embed
+ * names the column it follows; a bare `teams(...)` would be ambiguous.
+ */
+export const bothTeams = (columns: string) =>
+  `home_team:teams!home_team_id(${columns}), away_team:teams!away_team_id(${columns})`;
+
+/** A game from `teamId`'s side: which end it is, who it faces, and the score. */
+export function sideOf(row: Sides, teamId: string) {
+  const isHome = row.home_team_id === teamId;
+  return {
+    isHome,
+    opponentId: isHome ? row.away_team_id : row.home_team_id,
+    ourScore: isHome ? row.home_team_score : row.away_team_score,
+    theirScore: isHome ? row.away_team_score : row.home_team_score,
+  };
+}
+
+/** The opposing team's embed, given which end `teamId` is. */
+export const opponentOf = <T,>(
+  row: { home_team: T | T[] | null; away_team: T | T[] | null },
+  isHome: boolean,
+) => one(isHome ? row.away_team : row.home_team);
+
+/**
+ * The reverse of `sideOf()`, for writes: a form says "home, against X" and
+ * the row wants home and away ids. Scores are only included when given, so a
+ * form without score fields doesn't blank them. Neutral venues aren't offered
+ * by either form, matching the app, which always writes `is_neutral: false`.
+ */
+export function sidesFor(
+  teamId: string,
+  game: {
+    opponentId: string | null;
+    isHome: boolean;
+    ourScore?: number | null;
+    theirScore?: number | null;
+  },
+) {
+  const [home, away] = game.isHome
+    ? [teamId, game.opponentId]
+    : [game.opponentId, teamId];
+  const [homeScore, awayScore] = game.isHome
+    ? [game.ourScore, game.theirScore]
+    : [game.theirScore, game.ourScore];
+
+  return {
+    home_team_id: home,
+    away_team_id: away,
+    is_neutral: false,
+    ...(game.ourScore !== undefined ? { home_team_score: homeScore ?? null } : {}),
+    ...(game.theirScore !== undefined ? { away_team_score: awayScore ?? null } : {}),
+  };
+}
+
+type TeamEmbed = { name: string; logo_path: string | null };
+
+/**
  * Shape returned by the query below. A game is spread across four tables: the
  * `games` row holds the result, its `events` row the kickoff and season, and
- * `teams` and `fields` name the opponent and the venue.
+ * `teams` and `fields` name the two sides and the venue.
  */
-type GameRow = {
+type GameRow = Sides & {
   id: string;
-  is_home: boolean;
-  our_score: number | null;
-  their_score: number | null;
   film_link: string | null;
   event: { event_date: string } | null;
-  opponent: { name: string; logo_path: string | null } | null;
+  home_team: TeamEmbed | null;
+  away_team: TeamEmbed | null;
   field: { name: string; area: string | null; maps_address: string | null } | null;
 };
 
@@ -62,8 +132,7 @@ export const directionsUrl = (game: Game) =>
  * `!inner` on the event: a game with no event has no date, so it can't be
  * placed on the schedule, and the season filter below needs the join anyway.
  */
-const SELECT =
-  "id, is_home, our_score, their_score, film_link, event:events!inner(event_date), opponent:teams(name, logo_path), field:fields(name, area, maps_address)";
+const SELECT = `id, ${SIDES}, film_link, event:events!inner(event_date), ${bothTeams("name, logo_path")}, field:fields(name, area, maps_address)`;
 
 /** "John Muir Field, La Jolla" — the area is dropped when the field has none. */
 export const fieldLabel = (field: { name: string; area: string | null }) =>
@@ -73,7 +142,8 @@ function toGame(row: GameRow): Game | null {
   const event = one(row.event);
   if (!event) return null;
 
-  const team = one(row.opponent);
+  const { isHome, ourScore, theirScore } = sideOf(row, CLUB_TEAM_ID);
+  const team = opponentOf(row, isHome);
   const field = one(row.field);
 
   return {
@@ -81,11 +151,11 @@ function toGame(row: GameRow): Game | null {
     kickoff: event.event_date,
     opponent: team?.name ?? "TBD",
     opponentLogo: logoUrl(team?.logo_path ?? null),
-    isHome: row.is_home,
+    isHome,
     location: field ? (field.area ?? field.name) : null,
     address: field?.maps_address ?? null,
-    ourScore: row.our_score,
-    theirScore: row.their_score,
+    ourScore,
+    theirScore,
     filmLink: row.film_link,
   };
 }
@@ -107,7 +177,8 @@ export const getGames = cached("games", async (
   const { data, error } = await supabase
     .from("games")
     .select(SELECT)
-    .eq("event.season_id", season.id);
+    .eq("event.season_id", season.id)
+    .eq("event.team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load games: ${error.message}`);
 

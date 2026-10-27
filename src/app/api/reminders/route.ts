@@ -8,7 +8,8 @@ type Body = { rosterIds?: unknown; message?: unknown };
  * rather than the cookie. Takes roster ids, never phone numbers.
  */
 export async function POST(request: Request) {
-  if (!readBearerSession(request)?.captain) {
+  const session = readBearerSession(request);
+  if (!session?.captain) {
     return Response.json(
       { error: "Unlock admin mode to send reminders." },
       { status: 401 },
@@ -24,6 +25,6 @@ export async function POST(request: Request) {
     : [];
   const message = typeof body?.message === "string" ? body.message : "";
 
-  const result = await deliverReminder(rosterIds, message);
+  const result = await deliverReminder(session.teamId, rosterIds, message);
   return Response.json(result, { status: "error" in result ? 400 : 200 });
 }

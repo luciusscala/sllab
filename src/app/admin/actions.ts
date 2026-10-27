@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { CLUB_TEAM_ID } from "@/lib/club";
 import { EVENT_TYPE } from "@/lib/data/events";
 import {
   deleteWithEvent,
@@ -17,6 +18,7 @@ import {
   requireAdmin,
   startSession,
 } from "@/lib/admin-auth";
+import { sidesFor } from "@/lib/data/schedule";
 import { fromDateTimeLocal } from "@/lib/format";
 import { requireAdminClient } from "@/lib/supabase-admin";
 
@@ -169,14 +171,19 @@ const dateTime = (data: FormData, key: string) => {
   return value ? fromDateTimeLocal(value) : null;
 };
 
-/** The columns a form can set on a `games` row; the kickoff lives on its event. */
+/**
+ * The columns a form can set on a `games` row; the kickoff lives on its event.
+ * The form speaks in "us against them", the row in home and away.
+ */
 function gameColumns(data: FormData) {
   return {
-    opponent_id: text(data, "opponent_id"),
-    is_home: data.get("is_home") === "on",
+    ...sidesFor(CLUB_TEAM_ID, {
+      opponentId: text(data, "opponent_id"),
+      isHome: data.get("is_home") === "on",
+      ourScore: int(data, "our_score"),
+      theirScore: int(data, "their_score"),
+    }),
     field_id: text(data, "field_id"),
-    our_score: int(data, "our_score"),
-    their_score: int(data, "their_score"),
     film_link: text(data, "film_link"),
   };
 }
@@ -196,6 +203,7 @@ export async function createGame(_state: ActionState, data: FormData) {
   const error = await insertWithEvent(
     "games",
     EVENT_TYPE.game,
+    CLUB_TEAM_ID,
     seasonId,
     kickoff,
     gameColumns(data),
@@ -268,6 +276,7 @@ export async function createPractice(_state: ActionState, data: FormData) {
   const error = await insertWithEvent(
     "practices",
     EVENT_TYPE.practice,
+    CLUB_TEAM_ID,
     seasonId,
     date,
     practiceColumns(data),
@@ -337,6 +346,7 @@ export async function createSocialEvent(_state: ActionState, data: FormData) {
   const error = await insertWithEvent(
     "social_events",
     EVENT_TYPE.social,
+    CLUB_TEAM_ID,
     seasonId,
     date,
     socialEventColumns(data),
@@ -403,6 +413,7 @@ export async function createTournament(_state: ActionState, data: FormData) {
   const error = await insertWithEvent(
     "tournaments",
     EVENT_TYPE.tournament,
+    CLUB_TEAM_ID,
     seasonId,
     date,
     tournamentColumns(data),
@@ -470,6 +481,7 @@ export async function createPlayer(_state: ActionState, data: FormData) {
 
   const { error: rosterError } = await client.from("roster").insert({
     person_id: inserted.id,
+    team_id: CLUB_TEAM_ID,
     season_id: seasonId,
     class: playerClass,
     position,

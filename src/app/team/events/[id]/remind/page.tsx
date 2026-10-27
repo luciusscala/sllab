@@ -30,11 +30,11 @@ async function siteOrigin() {
 }
 
 export default async function RemindPage(props: PageProps<"/team/events/[id]/remind">) {
-  await requireCaptain();
+  const session = await requireCaptain();
   const { id } = await props.params;
 
   const [event, season, origin, base] = await Promise.all([
-    getEvent(id),
+    getEvent(id, session.teamId),
     getCurrentSeason(),
     siteOrigin(),
     teamBase(),
@@ -42,7 +42,7 @@ export default async function RemindPage(props: PageProps<"/team/events/[id]/rem
   if (!event) notFound();
 
   const [roster, availability] = await Promise.all([
-    season ? getRoster(season.id) : [],
+    season ? getRoster(season.id, session.teamId) : [],
     getAvailability([event.id]),
   ]);
   const statusOf = new Map(

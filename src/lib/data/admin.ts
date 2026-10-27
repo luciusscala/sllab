@@ -1,5 +1,13 @@
+import { CLUB_TEAM_ID } from "@/lib/club";
 import { compareNumbers } from "@/lib/data/roster";
-import { fieldLabel } from "@/lib/data/schedule";
+import {
+  type Sides,
+  SIDES,
+  bothTeams,
+  fieldLabel,
+  opponentOf,
+  sideOf,
+} from "@/lib/data/schedule";
 import { type SeasonScopedTable, populatedSeasons } from "@/lib/data/season";
 import { one } from "@/lib/supabase";
 import { requireAdminClient } from "@/lib/supabase-admin";
@@ -79,7 +87,7 @@ export type AdminGame = {
   filmLink: string | null;
   opponent: string;
   /** Selects the current team in the edit form's dropdown. */
-  opponentId: string | null;
+  opponentId: string;
   /** Selects the current field in the edit form's dropdown. */
   fieldId: string | null;
 };
@@ -102,6 +110,11 @@ export async function listTeams(): Promise<AdminTeam[]> {
 
   if (error) throw new Error(`Failed to load teams: ${error.message}`);
   return (data ?? []) as AdminTeam[];
+}
+
+/** Every team but `teamId` — the choices in a game's opponent dropdown. */
+export async function listOpponents(teamId: string): Promise<AdminTeam[]> {
+  return (await listTeams()).filter((team) => team.id !== teamId);
 }
 
 export async function listFields(): Promise<AdminField[]> {
@@ -135,7 +148,8 @@ export async function listRoster(seasonId: string): Promise<AdminRosterEntry[]> 
   const { data, error } = await requireAdminClient()
     .from("roster")
     .select("id, class, position, number, person:people(id, name, hometown, picture_path)")
-    .eq("season_id", seasonId);
+    .eq("season_id", seasonId)
+    .eq("team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load roster: ${error.message}`);
 
@@ -162,24 +176,22 @@ export async function listRoster(seasonId: string): Promise<AdminRosterEntry[]> 
     );
 }
 
-type GameRow = {
+type GameRow = Sides & {
   id: string;
-  is_home: boolean;
-  our_score: number | null;
-  their_score: number | null;
   film_link: string | null;
-  opponent_id: string | null;
   field_id: string | null;
   event: { id: string; event_date: string } | null;
-  opponent: { name: string } | null;
+  home_team: { name: string } | null;
+  away_team: { name: string } | null;
 };
 
 export async function listGames(seasonId: string): Promise<AdminGame[]> {
   // `!inner` so the season filter on the event drops non-matching games.
   const { data, error } = await requireAdminClient()
     .from("games")
-    .select("id, is_home, our_score, their_score, film_link, opponent_id, field_id, event:events!inner(id, event_date), opponent:teams(name)")
-    .eq("event.season_id", seasonId);
+    .select(`id, ${SIDES}, film_link, field_id, event:events!inner(id, event_date), ${bothTeams("name")}`)
+    .eq("event.season_id", seasonId)
+    .eq("event.team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load games: ${error.message}`);
 
@@ -189,17 +201,15 @@ export async function listGames(seasonId: string): Promise<AdminGame[]> {
     .flatMap((row) => {
       const event = one(row.event);
       if (!event) return [];
+      const side = sideOf(row, CLUB_TEAM_ID);
       return [
         {
           id: row.id,
           eventId: event.id,
           gameDate: event.event_date,
-          isHome: row.is_home,
-          ourScore: row.our_score,
-          theirScore: row.their_score,
+          ...side,
           filmLink: row.film_link,
-          opponent: one(row.opponent)?.name ?? "TBD",
-          opponentId: row.opponent_id,
+          opponent: opponentOf(row, side.isHome)?.name ?? "TBD",
           fieldId: row.field_id,
         },
       ];
@@ -226,7 +236,8 @@ export async function listPractices(seasonId: string): Promise<AdminPractice[]> 
   const { data, error } = await requireAdminClient()
     .from("practices")
     .select("id, field_id, notes, film_link, event:events!inner(id, event_date), field:fields(name, area)")
-    .eq("event.season_id", seasonId);
+    .eq("event.season_id", seasonId)
+    .eq("event.team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load practices: ${error.message}`);
 
@@ -262,7 +273,8 @@ export async function listSocialEvents(
   const { data, error } = await requireAdminClient()
     .from("social_events")
     .select("id, name, description, event:events!inner(id, event_date)")
-    .eq("event.season_id", seasonId);
+    .eq("event.season_id", seasonId)
+    .eq("event.team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load social events: ${error.message}`);
 
@@ -297,7 +309,8 @@ export async function listTournaments(
   const { data, error } = await requireAdminClient()
     .from("tournaments")
     .select("id, name, website_link, location, field_id, event:events!inner(id, event_date)")
-    .eq("event.season_id", seasonId);
+    .eq("event.season_id", seasonId)
+    .eq("event.team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load tournaments: ${error.message}`);
 
@@ -335,7 +348,7 @@ export async function adminSeason(
 ): Promise<{ seasons: AdminSeason[]; season: AdminSeason | undefined }> {
   const [seasons, populated] = await Promise.all([
     listSeasons(),
-    populatedSeasons(requireAdminClient(), table),
+    populatedSeasons(requireAdminClient(), table, CLUB_TEAM_ID),
   ]);
 
   const year = Number(

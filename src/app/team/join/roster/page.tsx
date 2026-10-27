@@ -13,7 +13,7 @@ export default async function RosterStepPage() {
   if (isComplete(session)) return teamRedirect("");
 
   const season = await getCurrentSeason();
-  const roster = season ? await getRoster(season.id) : [];
+  const roster = season ? await getRoster(season.id, session.teamId) : [];
 
   // Alphabetical here, as in the app: a new player is looking for their own
   // name, not their number.

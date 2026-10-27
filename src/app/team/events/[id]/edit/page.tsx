@@ -5,7 +5,7 @@ import { updateGame, updatePractice } from "@/app/team/actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { GameFields, PracticeFields } from "@/components/team/event-fields";
 import { FormCard } from "@/components/team/form-card";
-import { listFields, listTeams } from "@/lib/data/admin";
+import { listFields, listOpponents } from "@/lib/data/admin";
 import { getEvent } from "@/lib/data/team";
 import { toDateTimeLocal } from "@/lib/format";
 import { teamBase } from "@/lib/team-path";
@@ -18,10 +18,10 @@ export const metadata: Metadata = { title: "Edit Event" };
 export default async function EditEventPage(
   props: PageProps<"/team/events/[id]/edit">,
 ) {
-  await requireCaptain();
+  const session = await requireCaptain();
   const { id } = await props.params;
 
-  const event = await getEvent(id);
+  const event = await getEvent(id, session.teamId);
   if (!event) notFound();
 
   const back = `${await teamBase()}/events/${event.id}`;
@@ -47,7 +47,7 @@ export default async function EditEventPage(
   }
 
   if (event.type === "game") {
-    const [fields, teams] = await Promise.all([listFields(), listTeams()]);
+    const [fields, teams] = await Promise.all([listFields(), listOpponents(session.teamId)]);
     return (
       <FormCard title="Edit Game" cancelHref={back}>
         <AdminForm action={updateGame} submitLabel="Save">

@@ -1,3 +1,4 @@
+import { CLUB_TEAM_ID } from "@/lib/club";
 import { cached } from "@/lib/data/cache";
 import { getSeasonFor } from "@/lib/data/season";
 import { one, supabase } from "@/lib/supabase";
@@ -60,7 +61,8 @@ export const getPlayers = cached("players", async (
   const { data, error } = await supabase
     .from("roster")
     .select("class, position, number, person:people(id, name, hometown)")
-    .eq("season_id", season.id);
+    .eq("season_id", season.id)
+    .eq("team_id", CLUB_TEAM_ID);
 
   if (error) throw new Error(`Failed to load players: ${error.message}`);
 
