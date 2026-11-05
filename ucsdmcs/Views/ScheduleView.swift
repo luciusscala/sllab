@@ -10,6 +10,11 @@ struct ScheduleView: View {
     @State private var showGameForm = false
     @State private var navigationPath = NavigationPath()
 
+    @State private var hasScrolledToToday = false
+
+    // Scroll effects
+    @State private var listFrame: CGRect = .zero
+
     // Selection mode
     @State private var isSelecting = false
     @State private var selectedEventIDs: Set<UUID> = []
@@ -28,6 +33,13 @@ struct ScheduleView: View {
         let all = dataService.eventsWithAvailability(currentRosterId: rosterID)
         let grouped = Dictionary(grouping: all) { Calendar.current.startOfDay(for: $0.event.eventDate) }
         return grouped.sorted { $0.key < $1.key }.map { (date: $0.key, events: $0.value) }
+    }
+
+    /// The date section to scroll to on initial load (today or nearest future date).
+    private var todaySectionDate: Date? {
+        let today = Calendar.current.startOfDay(for: Date())
+        // Find the first section that is today or in the future
+        return groupedEvents.first { $0.date >= today }?.date
     }
 
     var body: some View {
@@ -150,22 +162,50 @@ struct ScheduleView: View {
     // MARK: - Event List
 
     private var eventList: some View {
-        List {
-            ForEach(groupedEvents, id: \.date) { group in
-                Section {
-                    ForEach(group.events) { item in
-                        eventCell(for: item)
+        ScrollViewReader { proxy in
+            List {
+                ForEach(groupedEvents, id: \.date) { group in
+                    let isPast = group.date < Calendar.current.startOfDay(for: Date())
+                    Section {
+                        ForEach(group.events) { item in
+                            Group {
+                                if isPast {
+                                    NavigationLink(value: item.event.id) {
+                                        EventRow(item: item)
+                                    }
+                                } else {
+                                    eventCell(for: item)
+                                }
+                            }
+                            .modifier(ScrollEdgeEffect(visibleFrame: listFrame))
+                        }
+
+                    } header: {
+                        Text(group.date.formatted(.dateTime.weekday(.wide).month().day()))
                     }
-                } header: {
-                    Text(group.date.formatted(.dateTime.weekday(.wide).month().day()))
+                    .id(group.date)
+                    .opacity(isPast ? 0.5 : 1)
                 }
             }
-        }
-        .listStyle(.insetGrouped)
-        .overlay(alignment: .bottom) {
-            if isSelecting && !selectedEventIDs.isEmpty {
-                bulkActionBar
-                    .padding(.bottom, 16)
+            .listStyle(.insetGrouped)
+            .onGeometryChange(for: CGRect.self) { geometry in
+                geometry.frame(in: .global)
+            } action: { frame in
+                listFrame = frame
+            }
+            .onAppear {
+                scrollToTodayIfNeeded(proxy: proxy)
+            }
+            .onChange(of: dataService.hasLoadedSchedule) { _, loaded in
+                if loaded {
+                    scrollToTodayIfNeeded(proxy: proxy)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if isSelecting && !selectedEventIDs.isEmpty {
+                    bulkActionBar
+                        .padding(.bottom, 16)
+                }
             }
         }
     }
@@ -279,14 +319,51 @@ struct ScheduleView: View {
         exitSelectionMode()
     }
 
+    private func scrollToTodayIfNeeded(proxy: ScrollViewProxy) {
+        guard !hasScrolledToToday, let target = todaySectionDate else { return }
+        hasScrolledToToday = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation {
+                proxy.scrollTo(target, anchor: .top)
+            }
+        }
+    }
+
     private func loadData() async {
         await dataService.fetchCurrentSeason()
         if let season = dataService.currentSeason {
-            await dataService.fetchUpcomingEvents(seasonId: season.id)
+            await dataService.fetchEvents(seasonId: season.id)
             await dataService.fetchRoster(seasonId: season.id)
             await dataService.fetchAllAvailability(for: dataService.events.map(\.id))
             dataService.hasLoadedSchedule = true
         }
+    }
+}
+
+/// Subtly fades and softens a row near the list's top and bottom edges.
+/// Rows farther than `edgeZone` from both edges are left completely untouched.
+private struct ScrollEdgeEffect: ViewModifier {
+    let visibleFrame: CGRect
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        let visibleFrame = visibleFrame
+        let isEnabled = !reduceMotion && !visibleFrame.isEmpty
+        content.visualEffect { effect, geometry in
+            let progress = isEnabled
+                ? Self.edgeProgress(row: geometry.frame(in: .global), visibleFrame: visibleFrame)
+                : 0
+            return effect
+                .opacity(1 - 0.35 * progress)
+                .blur(radius: 0.5 * progress)
+        }
+    }
+
+    /// 0 outside the edge zone, rising to 1 as the row reaches the edge.
+    private nonisolated static func edgeProgress(row: CGRect, visibleFrame: CGRect) -> CGFloat {
+        let edgeZone: CGFloat = 72
+        let distanceToEdge = min(row.minY - visibleFrame.minY, visibleFrame.maxY - row.maxY)
+        return min(max(1 - distanceToEdge / edgeZone, 0), 1)
     }
 }
 

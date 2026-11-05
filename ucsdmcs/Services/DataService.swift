@@ -146,18 +146,16 @@ final class DataService {
 
     // MARK: - Events
 
-    func fetchUpcomingEvents(seasonId: UUID) async {
+    func fetchEvents(seasonId: UUID) async {
         let isInitialLoad = events.isEmpty
         if isInitialLoad { isLoading = true }
         defer { if isInitialLoad { isLoading = false } }
 
         do {
-            let now = ISO8601DateFormatter().string(from: Date())
             var query = supabase
                 .from("events")
                 .select()
                 .eq("season_id", value: seasonId.uuidString)
-                .gte("event_date", value: now)
             if let teamId = currentTeamId {
                 query = query.eq("team_id", value: teamId.uuidString)
             }
@@ -396,7 +394,7 @@ final class DataService {
 
             // Refresh schedule
             hasLoadedSchedule = false
-            await fetchUpcomingEvents(seasonId: seasonId)
+            await fetchEvents(seasonId: seasonId)
             await fetchAllAvailability(for: events.map(\.id))
             hasLoadedSchedule = true
         } catch {
@@ -460,7 +458,7 @@ final class DataService {
                 .execute()
 
             hasLoadedSchedule = false
-            await fetchUpcomingEvents(seasonId: seasonId)
+            await fetchEvents(seasonId: seasonId)
             await fetchAllAvailability(for: events.map(\.id))
             hasLoadedSchedule = true
         } catch {
@@ -488,7 +486,7 @@ final class DataService {
 
             if let seasonId = currentSeason?.id {
                 hasLoadedSchedule = false
-                await fetchUpcomingEvents(seasonId: seasonId)
+                await fetchEvents(seasonId: seasonId)
                 await fetchAllAvailability(for: events.map(\.id))
                 hasLoadedSchedule = true
             }
@@ -522,7 +520,7 @@ final class DataService {
 
             if let seasonId = currentSeason?.id {
                 hasLoadedSchedule = false
-                await fetchUpcomingEvents(seasonId: seasonId)
+                await fetchEvents(seasonId: seasonId)
                 await fetchAllAvailability(for: events.map(\.id))
                 hasLoadedSchedule = true
             }
