@@ -1,6 +1,6 @@
 # Sllab Hardware
 
-Firmware, PCB and 3D-printable parts for the Video by [Video by SLLAB](https://github.com/luciusscala/sllab) auto-tracking camera mount for soccer game film: a stepper-driven pan base that turns an iPhone into an automated cameraman, steered over Bluetooth.
+Firmware, PCB and 3D-printable parts for [Video by SLLAB](https://github.com/luciusscala/sllab) auto-tracking camera mount for soccer game film: a stepper-driven pan base that turns an iPhone into an automated cameraman, steered over Bluetooth.
 
 It's part of [Sllab](https://sllab.io), a platform that makes team operations, film and stats affordable for club sports. The full film system costs about $400, compared to about $2,000 for commercial auto-tracking setups.
 
