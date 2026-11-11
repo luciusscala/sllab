@@ -1,0 +1,153 @@
+% sllab.sty: formatting for the SLLAB write-up.
+%
+% Adapted for XeTeX (Tectonic) from paper.sty in Pascal Michaillat's
+% latex-paper template, https://github.com/pmichaillat/latex-paper.
+% Changes: pdfTeX-only font setup removed; theorem and appendix-theorem
+% machinery dropped; TikZ styles and a media placeholder added.
+%
+% MIT License. Copyright (c) 2022–present Pascal Michaillat.
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions: The above copyright
+% notice and this permission notice shall be included in all copies or
+% substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS",
+% WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+
+% ---- Fonts ----
+
+\usepackage{sourceserifpro}
+\usepackage[scale=0.88]{sourcecodepro}
+\usepackage{amsmath}
+\usepackage[italic, nolessnomore, noparenthesis, noplusnominus, noequal, nohbar]{mathastext}
+
+% ---- Page layout and spacing ----
+
+\usepackage[top=1in, left=1.3in, right=1.3in, bottom=1.2in, footskip=0.7in]{geometry}
+\usepackage[onehalfspacing]{setspace}
+\usepackage{microtype}
+\setlength{\emergencystretch}{3em}
+\AtBeginDocument{\frenchspacing}
+\usepackage[x11names]{xcolor}
+
+% ---- Header and footer ----
+
+\usepackage{etoolbox}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhf{}
+\fancypagestyle{plain}{\fancyhf{}}
+\fancyfoot[C]{\thepage}
+
+% URL in the footer of the title page
+\NewDocumentCommand{\paperurl}{m}{%
+\fancypagestyle{plain}{\fancyfoot[C]{\color{gray}\footnotesize Available at \url{#1}}}%
+\AtBeginEnvironment{titlepage}{\pagestyle{plain}}}
+
+% ---- Title page ----
+
+\usepackage{titling}
+\pretitle{\begin{center}\bfseries\Huge}
+\renewcommand{\tamark}{}
+\setlength{\thanksmarkwidth}{0em}
+\setlength{\thanksmargin}{0em}
+\AtBeginEnvironment{titlepage}{\setlength{\parindent}{0pt}}
+
+% ---- Section headings ----
+
+\usepackage{titlesec}
+\titleformat*{\section}{\centering\large\bfseries}
+\titleformat*{\subsection}{\bfseries}
+\makeatletter
+\titleformat{\paragraph}[runin]{\itshape}{}{}{}[\@addpunct{.}\hspace{1em}]
+\makeatother
+\titlelabel{\thetitle.\hspace{1em}}
+
+% ---- Figures and tables ----
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage[section,above]{placeins}
+\renewcommand{\floatpagefraction}{0}
+\makeatletter\g@addto@macro\@floatboxreset\centering\makeatother
+\renewcommand{\arraystretch}{1.2}
+\renewcommand{\tablename}{\textsc{table}}
+\renewcommand{\figurename}{\textsc{figure}}
+\usepackage{caption, subcaption}
+\DeclareCaptionLabelSeparator{periodem}{.\hspace{1em}}
+\captionsetup{labelsep=periodem}
+\captionsetup[table]{position=top}
+\captionsetup[sub]{labelformat=simple, labelsep=periodem, size=small}
+\renewcommand{\thesubfigure}{\Alph{subfigure}}
+
+% Note below a figure or table
+\NewDocumentCommand{\note}{o m}{%
+\parbox{\linewidth}{\footnotesize\vspace*{10pt}%
+\IfValueT{#1}{\textit{#1}.\hspace{1em}}%
+#2}}
+
+% ---- Diagrams ----
+
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, fit, calc, backgrounds}
+\tikzset{
+  box/.style={draw, line width=0.5pt, fill=white, align=center, font=\footnotesize,
+              inner sep=4pt, minimum height=11mm, minimum width=25mm},
+  plan/.style={box, draw=gray, dashed, text=gray},
+  db/.style={box, fill=gray!12},
+  arr/.style={-{Stealth[length=2mm]}, line width=0.5pt},
+  parr/.style={arr, gray, dashed},
+  note/.style={font=\scriptsize\itshape, align=center},
+  tbody/.style={draw, line width=0.5pt, fill=white, align=left, font=\scriptsize\ttfamily,
+                inner sep=3pt, text width=31mm},
+  thead/.style={draw, line width=0.5pt, fill=gray!15, align=center, font=\scriptsize\bfseries,
+                inner sep=3pt, text width=31mm},
+}
+
+% \media{file}{width}{height}{description}: the image in figures/ if present,
+% otherwise a placeholder box naming the file.
+\NewDocumentCommand{\media}{m m m m}{%
+  \IfFileExists{figures/#1}{%
+    \includegraphics[width=#2, height=#3, keepaspectratio]{figures/#1}%
+  }{%
+    \begin{tikzpicture}
+      \node[draw=gray, dashed, line width=0.5pt, fill=gray!6, minimum width=#2,
+            minimum height=#3, text width=#2-12pt, align=center, inner sep=6pt,
+            font=\footnotesize\color{gray}] {%
+        \textsc{media}\\[2pt]#4\\[3pt]{\tiny\ttfamily #1}};
+    \end{tikzpicture}%
+  }%
+}
+
+% ---- Lists ----
+
+\usepackage{enumitem}
+\setlist[itemize, 1]{leftmargin=\parindent, label=\color{gray}{\upshape\textbullet}, topsep=0.5em, itemsep=0.5em, parsep=0pt}
+\setlist[enumerate, 1]{leftmargin=\parindent, label=\color{gray}{\upshape\arabic*.}, topsep=0.5em, itemsep=0.5em, parsep=0pt}
+
+% ---- Bibliography ----
+
+\usepackage{natbib}
+\setcitestyle{aysep={}}
+\renewcommand{\bibfont}{\small}
+\setlength{\bibsep}{0pt}
+\setlength{\bibhang}{\parindent}
+
+% ---- Appendix after the bibliography ----
+
+\AfterEndEnvironment{thebibliography}{%
+\setcounter{table}{0}\setcounter{figure}{0}\setcounter{section}{0}%
+\renewcommand{\thetable}{A\arabic{table}}%
+\renewcommand{\thefigure}{A\arabic{figure}}%
+\renewcommand{\thesection}{\Alph{section}}%
+\titleformat{\section}{\centering\large\bfseries}{Appendix~\thesection.}{1em}{}}
+
+% ---- Hyperlinks ----
+
+\PassOptionsToPackage{hyphens}{url}
+\usepackage[hidelinks, hypertexnames=false, pdfpagemode=UseNone, pdfdisplaydoctitle=true]{hyperref}
