@@ -1,0 +1,1 @@
+This is the website for sllab, built with the next.js framework.
