@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['soccer-ball']
+
+roboflow:
+  workspace: t-kefeng-gmail-com
+  project: soccer-ball-kjoyy
+  version: 7
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/t-kefeng-gmail-com/soccer-ball-kjoyy/dataset/7

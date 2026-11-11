@@ -1,0 +1,17 @@
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
+# JavaScript
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Secrets: only templates are committed
+.env*
+!.env*.example

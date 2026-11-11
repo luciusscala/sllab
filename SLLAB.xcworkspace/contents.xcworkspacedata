@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:apps/fixture-ios/ucsdmcs.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:apps/film-ios/sllab.xcodeproj">
+   </FileRef>
+</Workspace>

@@ -1,0 +1,9 @@
+# Images, labels and training output are large and re-creatable.
+# Datasets download from Roboflow; see README.md.
+datasets/*/train/
+datasets/*/valid/
+datasets/*/test/
+custom_data/
+runs/
+*.pt
+*.mlpackage
