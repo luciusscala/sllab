@@ -12,12 +12,15 @@ here as migrations and pushed, never edited by hand in the dashboard.
 login and the project's database password (Project Settings → Database).
 
 ```sh
-npx supabase login
-npx supabase link --project-ref uossjvkayfchytbycumd
-npx supabase db pull          # writes migrations/<timestamp>_remote_schema.sql
+npx supabase@3.1.0 login
+npx supabase@3.1.0 link --project-ref uossjvkayfchytbycumd
+npx supabase@3.1.0 db pull --remote # writes migrations/<timestamp>_remote_schema.sql
 ```
 
-`db pull` uses Docker to diff the schema, so Docker Desktop must be running. Check that
+The CLI is pinned to 3.1.0. From v3, database commands target the local stack unless
+given `--remote`. `db pull` uses Docker to diff the schema, so Docker must be running.
+When it asks to confirm writing to the hosted database, answer yes: it only records the
+baseline in the migration history, so a later `db push --remote` will not recreate existing tables. Check that
 `[db] major_version` in `config.toml` matches the live project's Postgres version first.
 
 Commit the generated migration. It is the baseline: every later change is a new file.
@@ -25,8 +28,8 @@ Commit the generated migration. It is the baseline: every later change is a new 
 ## Day to day
 
 ```sh
-npx supabase start                      # local Postgres, Auth and Storage in Docker
-npx supabase migration new <name>       # write the change as SQL
-npx supabase db reset                   # rebuild local from migrations + seed.sql
-npx supabase db push                    # apply new migrations to the live project
+npx supabase@3.1.0 start                      # local Postgres, Auth and Storage in Docker
+npx supabase@3.1.0 migration new <name>       # write the change as SQL
+npx supabase@3.1.0 db reset                   # rebuild local from migrations + seed.sql
+npx supabase@3.1.0 db push --remote           # apply new migrations to the live project
 ```
