@@ -1,35 +1,63 @@
 # Fixture by SLLAB
 
-Fixture is an IOS app built for college club sport teams to keep track of practice/game availability and manage rosters. It is part of a bigger project ( ADD LINK ) which aims to create an affordable platform to allow clubs to run smoother and be more competitive. In Fixture, players can see their schedule and mark their availability for practices, games, tournaments, and social events. Captains can create events, track attendance, and message the team.
+Fixture by SLLAB is the iOS app players and captains use every day. Players see the team schedule and mark whether they're going. Captains create events, see who's coming, track attendance over the season, and text reminders to the players who haven't answered.
+
+It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.apple.com/us/app/fixture-management/id6812923949) as Fixture Management. The same features are available on the web, in [`apps/club-sites`](../club-sites).
+
+<!-- MEDIA: screenshots of the schedule, an event with team responses, the message composer, and the captain dashboard -->
+
+## Features
+
+**For players**
+- Join with a team code, pick your name off the roster, and add a phone number. No account or password.
+- See upcoming and past practices and games, with the field and a link to directions.
+- Mark yourself going or not going, and see who else is.
+
+**For captains**
+- Create games and practices, including a repeating practice schedule: pick the weekdays and a date range, and every session is created at once.
+- Edit or delete any event.
+- See each event's responses, grouped into going, not going and no response.
+- Text a reminder to chosen players, filtered by response. Phone numbers are looked up on the server and never sent to the app.
+- Track attendance across the season. Players are ranked by an issue score that weighs not responding 1.5 times more than declining, since silence is harder for a captain to plan around than a no. Each player's page lists the events they attended and the ones they missed, and why.
+
+**App behavior**
+- Event links (`app.ucsdmcs.com/events/<id>`) open the event directly in the app.
+- A minimum supported version is stored in the database. Older builds show an update screen. If the check can't reach the server, the app opens normally rather than blocking players.
 
 ## Requirements
 
 - Xcode 26
 - iOS 18.6 or later
 
-## Getting Started
+## Getting started
 
-1. Clone the repo and open `ucsdmcs.xcodeproj`.
-2. Xcode resolves the Swift package dependencies ([supabase-swift](https://github.com/supabase/supabase-swift)) automatically.
+1. Open `SLLAB.xcworkspace` at the repository root, or `ucsdmcs.xcodeproj` here.
+2. Xcode resolves the one package dependency, [supabase-swift](https://github.com/supabase/supabase-swift), automatically.
 3. Select your development team under **Signing & Capabilities**, then build and run.
 
-## Project Structure
+Run the tests with **Product → Test** (⌘U). They cover the models, JSON decoding, availability grouping, attendance statistics and the data service.
+
+## Project structure
 
 ```
 ucsdmcs/
-├── Models/       Data types (events, teams, roster, availability)
-├── Services/     Supabase client, website API, Keychain, deep links
-├── Views/        App screens; Admin/ holds captain-only views
+├── Models/       Events and their types, teams, roster, availability, attendance stats
+├── Services/     Supabase client, website API, captain session, Keychain, deep links, update check
+├── Views/        Screens; Admin/ holds the captain-only ones
 ├── Components/   Reusable UI pieces
-└── Theme/        Shared colors and styles
+└── Theme/        Shared colors and spacing
+ucsdmcsTests/     Unit tests
 ```
-*note: in the codebase you may notice that the app is referred to as ucsdmcs; this is the original name of Fixture by SLLAB and is often used interchangeably throughout.*
+
+The Xcode project and source folder are still named `ucsdmcs`, the app's original name.
 
 ## Backend
 
-- **Supabase** stores teams, rosters, events, and availability.
-- **Website API** (`www.ucsdmcs.com/api`) handles captain unlock and SMS reminders.
-- **Universal Links** (`app.ucsdmcs.com/events/<id>`) open events directly in the app.
+- **Supabase** stores teams, rosters, events and availability. The app reads and writes it directly.
+- **The website's API** (`www.ucsdmcs.com/api`) handles the two things that need a server: unlocking captain mode, which exchanges the team's captain code for a signed token kept in the Keychain, and sending SMS reminders.
+- **Universal links** are served by the website at `/.well-known/apple-app-site-association`.
+
+Both server pieces move to the platform's own API and domain as SLLAB grows; see the [write-up](../../docs/writeup/sllab.pdf).
 
 ## AI Disclosure
 

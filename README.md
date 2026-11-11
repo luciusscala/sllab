@@ -1,31 +1,81 @@
 # SLLAB
 
-One platform for running a college club sports team: availability and schedules, people
-and messaging, stats and standings, public club sites, and game film, on one backend.
+SLLAB is a platform for running a college club sports team: schedules and availability, people and messaging, stats and standings, public club sites, and game film, all on one backend.
+
+Club teams are run by students with no staff, and their officers change every year or two. SLLAB gives a club the logistics and polish of a staffed program, without the cost.
+
+It started with, and is used daily by, the UC San Diego Men's Club Soccer team.
+
+> **Write-up:** [`docs/writeup/sllab.pdf`](docs/writeup/sllab.pdf) covers the architecture, the data model, the tracking camera, and the roadmap in detail.
+
+## What's here
+
+| | Status | What it does |
+|---|---|---|
+| **[Fixture by SLLAB](apps/fixture-ios)** (iOS) | [On the App Store](https://apps.apple.com/us/app/fixture-management/id6812923949) | Players see the schedule and mark availability. Captains create events, track attendance, and text reminders. |
+| **[Film by SLLAB](apps/film-ios)** (iOS) | Working prototype | Records games on a phone mounted on a motorized base that follows play using on-device detection. |
+| **[Hardware by SLLAB](hardware)** | Working prototype | ESP32 firmware, a custom PCB, and 3D-printed parts for Film's pan base. |
+| **[UCSDMCS by SLLAB](apps/club-sites)** (web) | Live at [ucsdmcs.com](https://www.ucsdmcs.com) | Public schedule, scores, standings, roster and tryouts, plus a web version of Fixture and an admin dashboard. |
+| **[sllab.io](apps/www)** (web) | Live | The project's own site. |
+| **[Detection model](ml)** | In progress | Training and Core ML export for Film's detector. |
 
 ## Layout
 
-| Path | What it is | Runs on |
-|---|---|---|
-| `supabase/` | The database: migrations, database rules, seed data | Supabase |
-| `apps/api/` | Platform logic and integrations (SMS, invites, payments) | Railway |
-| `apps/web/` | Platform web app: team app, manager console, site editor | Vercel |
-| `apps/club-sites/` | Every club's public site, rendered from data | Vercel |
-| `apps/www/` | sllab.io marketing site | Vercel |
-| `apps/fixture-ios/` | Fixture: schedule, availability, messages | App Store |
-| `apps/film-ios/` | Film: record games with the tracking mount | App Store |
-| `packages/db/` | Shared database types and queries (TypeScript) | — |
-| `packages/swift/` | SLLABKit: shared Swift models, clients and UI | — |
-| `hardware/` | Tracking mount: firmware, PCB, CAD | — |
-| `ml/` | Training and export for Film's detection model | — |
+```
+supabase/          the database: migrations, access rules, seed data
+apps/
+  api/             platform logic and integrations (planned)
+  web/             platform web app: team app, manager console, site editor (planned)
+  club-sites/      club public sites; today, the UC San Diego site
+  www/             sllab.io
+  fixture-ios/     Fixture
+  film-ios/        Film
+packages/
+  db/              shared database types and queries for the web apps (planned)
+  swift/           SLLABKit, shared code for the iOS apps (planned)
+hardware/          firmware, PCB, CAD for the tracking mount
+ml/                detection model training and export
+docs/              write-up
+```
 
 `SLLAB.xcworkspace` opens both iOS apps together.
 
-## Where things stand
+Each folder has its own README with setup instructions. Pieces marked *planned* hold a README that defines their job, so the boundaries are fixed before the code arrives.
 
-The monorepo was assembled from five repos, with their history:
+## Architecture
 
-| Path | Former repo |
+Every app reads and writes one Supabase (Postgres) project.
+
+- **The iOS apps** read and write simple data directly, protected by the database's access rules.
+- **The platform API** handles anything that needs secrets or crosses accounts, such as SMS, invites and payments.
+- **The web apps** render pages from the same database.
+
+Today, the API's first two endpoints (captain unlock and SMS reminders) live in the club site. They move to `apps/api` as the platform grows; the write-up's roadmap covers the order.
+
+## Principles
+
+- **One backend.** The schema lives in `supabase/migrations` as ordered SQL files. Changes are made as migrations, never by hand in the dashboard.
+- **Logic lives in the API.** Web apps render, and iOS apps call the API for anything beyond simple reads and writes. No business logic is duplicated per client.
+- **New features are new tables, routes and screens, not new apps.** A new app is justified only by a new kind of user or device, the way Film needs the camera.
+- **Shared records are platform-wide.** Schools, teams, crests, fields and leagues exist once, and every club points to them.
+
+## Development
+
+| To work on | You need |
+|---|---|
+| Web apps | Node.js 20.9+; then `npm ci` and `npm run dev` in the app's folder |
+| iOS apps | Xcode 26; open `SLLAB.xcworkspace` |
+| Database | Docker and the Supabase CLI; see [`supabase/README.md`](supabase/README.md) |
+| Hardware | Arduino IDE with the ESP32 board package |
+| Model | Python with `ultralytics`; see [`ml/README.md`](ml/README.md) |
+
+CI builds and lints the web apps on every change to them.
+
+## History
+
+This repository was assembled in November 2026 from five earlier repositories, with their full commit history:
+
+| Path | Former repository |
 |---|---|
 | `apps/fixture-ios` | `ucsd-mcs-app` |
 | `apps/film-ios` | `project-2` |
@@ -33,17 +83,8 @@ The monorepo was assembled from five repos, with their history:
 | `apps/www` | `sllab.io` |
 | `hardware` | `sllab-hardware` |
 
-`apps/club-sites` is still the UCSD MCS website. It currently also holds the team app,
-the admin dashboard and the iOS app's API, which move to `apps/web` and `apps/api`.
-`apps/api`, `apps/web` and both packages are placeholders until then.
+Older names still appear in code: Fixture's Xcode project is `ucsdmcs`, and Film's source folder is `project-2`.
 
-## Principles
+## AI Disclosure
 
-- **One backend.** Every app reads and writes the same Supabase project. Schema changes
-  are migrations in `supabase/`, never dashboard edits.
-- **Logic lives in `api`.** Web apps render; iOS apps call Supabase directly for simple
-  data and the API for anything needing secrets or crossing accounts.
-- **New features are new tables, routes and screens, not new apps.** A new app is
-  justified only by a new kind of user or device.
-- **Shared records are platform-wide.** Schools, teams, crests, fields and leagues exist
-  once and every club points to them.
+Parts of this codebase and readme were written with the help of AI. All files were reviewed by a human, but it is provided as-is, with no guarantee that it is correct, secure, or fit for any particular purpose.

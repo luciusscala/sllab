@@ -25,3 +25,7 @@ python export.py    # exports to Core ML for Film
 ```
 
 Move the exported `.mlpackage` to `apps/film-ios/project-2/Resources/`.
+
+## AI Disclosure
+
+Parts of this codebase and readme were written with the help of AI. All files were reviewed by a human, but it is provided as-is, with no guarantee that it is correct, secure, or fit for any particular purpose.

@@ -33,3 +33,7 @@ npx supabase@3.1.0 migration new <name>       # write the change as SQL
 npx supabase@3.1.0 db reset                   # rebuild local from migrations + seed.sql
 npx supabase@3.1.0 db push --remote           # apply new migrations to the live project
 ```
+
+## AI Disclosure
+
+Parts of this codebase and readme were written with the help of AI. All files were reviewed by a human, but it is provided as-is, with no guarantee that it is correct, secure, or fit for any particular purpose.

@@ -14,3 +14,7 @@ Not built yet. Its first jobs move here from `apps/club-sites`: captain unlock
   credentials. Callers are identified by verifying their Supabase access token.
 - Simple reads and writes don't go through here: the apps call Supabase directly,
   protected by the database rules in `supabase/`.
+
+## AI Disclosure
+
+Parts of this codebase and readme were written with the help of AI. All files were reviewed by a human, but it is provided as-is, with no guarantee that it is correct, secure, or fit for any particular purpose.

@@ -1,18 +1,18 @@
-# Sllab Hardware
+# Hardware by SLLAB
 
-Firmware, PCB and 3D-printable parts for [Video by SLLAB](https://github.com/luciusscala/sllab) auto-tracking camera mount for soccer game film: a stepper-driven pan base that turns an iPhone into an automated cameraman, steered over Bluetooth.
+Firmware, PCB and 3D-printable parts for the auto-tracking camera mount used by [Film by SLLAB](../apps/film-ios): a stepper-driven pan base that turns an iPhone into an automated cameraman, steered over Bluetooth.
 
-It's part of [Sllab](https://sllab.io), a platform that makes team operations, film and stats affordable for club sports. The full film system costs about $400, compared to about $2,000 for commercial auto-tracking setups.
+It's part of [SLLAB](../README.md), a platform that makes team operations, film and stats affordable for club sports. The full film system costs about $400, compared to about $2,000 for commercial auto-tracking setups.
 
 ![The mount following a player across a field](media/timeline/4-tracking-demo-2.gif)
 
-> **Status:** working prototype. The full tracking loop (detect → smooth → Bluetooth → motor) runs end to end using person detection. A ball-specific model is in progress in the [app repo](https://github.com/luciusscala/sllab).
+> **Status:** working prototype. The full tracking loop (detect → smooth → Bluetooth → motor) runs end to end using person detection. A ball-specific model is in progress in [`ml/`](../ml).
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    subgraph phone["iPhone · Sllab app"]
+    subgraph phone["iPhone · Film app"]
         A[Camera frame] --> B[YOLO detection] --> C["Offset from center,<br/>smoothed, −1 to +1"]
     end
     subgraph esp["ESP32 · this firmware"]
@@ -79,9 +79,9 @@ GitHub renders the `.stl` files as interactive 3D previews. To assemble: press-f
 1. Open `firmware/soccercam/soccercam.ino`.
 2. Select your ESP32 board and port, then upload.
 3. Open the serial monitor at 115200 baud. You should see `BLE ready. Advertising as 'SoccerCam'.`
-4. Launch the Sllab app; it scans for the service UUID and connects automatically.
+4. Launch Film; it scans for the service UUID and connects automatically.
 
-The service and characteristic UUIDs must match `BluetoothManager.swift` in the app.
+The service and characteristic UUIDs must match [`BluetoothManager.swift`](../apps/film-ios/project-2/Services/BluetoothManager.swift) in Film.
 
 **Tuning** (top of the sketch):
 
@@ -114,12 +114,13 @@ Prototyped end to end, from a breadboard to a custom PCB with 3D-printed parts. 
 | `cad/` | 3D-printable parts (`.stl`) |
 | `media/timeline/` | Build photos and tracking demos |
 
-## Related repos
+## Related
 
-| Repo | What it is |
+| Path | What it is |
 |---|---|
-| [sllab](https://github.com/luciusscala/sllab) | iOS film app: on-device detection, steering, YouTube upload |
-| [sllab.io](https://github.com/luciusscala/sllab.io) | Sllab project site |
+| [`apps/film-ios`](../apps/film-ios) | Film, the iOS app: on-device detection, steering, YouTube upload |
+| [`ml`](../ml) | Detection model training and export |
+| [`docs/writeup`](../docs/writeup/sllab.pdf) | Write-up covering the mount, the tracking loop and the platform |
 
 ## AI Disclosure
 

@@ -1,0 +1,570 @@
+% SLLAB technical write-up. Build with: tectonic sllab.tex
+\documentclass[11pt]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage{libertinus}
+\setmonofont[Scale=0.88]{LibertinusMono-Regular.otf}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,calc,backgrounds}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{amsmath}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{muted}{HTML}{5F6B76}
+\definecolor{planned}{HTML}{9AA5B1}
+\definecolor{wash}{HTML}{EEF3F8}
+
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent,citecolor=accent}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parskip}{5pt}
+\setlength{\parindent}{0pt}
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.7em}{}
+\titlespacing*{\section}{0pt}{18pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\small\color{muted}SLLAB}
+\fancyfoot[R]{\small\color{muted}\thepage}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\sllab}{SLLAB}
+
+% \media{file}{width}{height}{description}
+% Uses figures/<file> when it exists, otherwise draws a labeled placeholder.
+\newcommand{\media}[4]{%
+  \IfFileExists{figures/#1}{%
+    \includegraphics[width=#2,height=#3,keepaspectratio]{figures/#1}%
+  }{%
+    \begin{tikzpicture}
+      \node[draw=accent!55, dashed, line width=0.7pt, fill=wash, rounded corners=3pt,
+            minimum width=#2, minimum height=#3, text width=#2-14pt, align=center,
+            font=\small\color{muted}, inner sep=7pt] {%
+        \textbf{\color{accent}MEDIA}\\[3pt]#4\\[4pt]\mbox{\footnotesize\code{figures/#1}}};
+    \end{tikzpicture}%
+  }%
+}
+
+\tikzset{
+  box/.style={draw=accent, line width=0.6pt, rounded corners=2pt, fill=white,
+              align=center, font=\small, inner sep=5pt, minimum height=9mm},
+  plan/.style={box, draw=planned, dashed, text=muted},
+  db/.style={box, fill=wash, line width=0.9pt},
+  arr/.style={-{Stealth[length=2.2mm]}, line width=0.6pt, color=accent},
+  parr/.style={arr, color=planned, dashed},
+  note/.style={font=\scriptsize\color{muted}, align=center},
+  tbl/.style={draw=accent, line width=0.5pt, fill=white, align=left, font=\scriptsize,
+              inner sep=3pt, text width=31mm, rounded corners=1.5pt},
+  tblh/.style={font=\footnotesize\bfseries\color{white}},
+}
+
+\begin{document}
+
+% ---------------------------------------------------------------- title
+\begin{center}
+  {\fontsize{28}{32}\selectfont\bfseries\color{accent} SLLAB}\\[6pt]
+  {\Large A platform for running a college club sports team}\\[14pt]
+  {\large Lucius Scala}\\[2pt]
+  {\color{muted} University of California, San Diego \quad·\quad
+   \href{mailto:lscala@ucsd.edu}{lscala@ucsd.edu}}\\[2pt]
+  {\color{muted} November 2026}
+\end{center}
+
+\vspace{6pt}
+\begin{center}
+\begin{minipage}{0.86\linewidth}
+\small
+\textbf{Abstract.}
+College club sports teams are run by students, with no staff, no budget for professional
+tools, and officers who change every year or two. \sllab{} is a platform that gives a club
+the logistics of a staffed program: a schedule and availability app, SMS reminders, attendance
+tracking, a public website with live standings, and an automated game-film system built on a
+custom tracking camera mount. It is in daily use by the UC San Diego Men's Club Soccer team,
+and its iOS app is on the App Store. This write-up describes the system as built: its
+architecture, data model, the computer-vision and embedded control loop behind the camera,
+and the plan for turning one team's tools into a platform any club can use.
+\end{minipage}
+\end{center}
+
+% ---------------------------------------------------------------- 1
+\section{Motivation}
+
+A college club team does everything a varsity program does, such as scheduling practices,
+booking fields, travelling to tournaments, recruiting at tryouts and keeping a roster
+eligible, but students do all of it, in their spare time. The tools they use are general
+purpose: group chats for attendance, spreadsheets for rosters, a form for tryouts, a website
+nobody updates. Each works on its own, and nothing connects them. When officers graduate, much of
+what they knew leaves with them.
+
+Two costs make this worse. Game film, which teams use to improve, usually means paying for
+a camera operator, or for a commercial auto-tracking camera at around \$2{,}000. And because
+the tools are disconnected, the same information is entered in several places and drifts
+out of date.
+
+The goal of \sllab{} is one connected platform with one backend: the schedule a captain
+creates is the one players respond to, the one the public website shows, and the one game
+film is attached to. It should be simple enough that a club adopts it without a developer,
+and polished enough that the team feels like a program.
+
+\subsection*{What exists}
+
+\begin{itemize}
+  \item \textbf{Fixture by \sllab}, an iOS app for schedules, availability, reminders and
+        attendance. Released on the App Store (version 1.2).
+  \item \textbf{UCSDMCS by \sllab}, the club's public website, with live standings, a
+        calendar feed, a web version of Fixture, and an admin dashboard.
+  \item \textbf{Film by \sllab}, an iOS app that records games on a phone mounted on a
+        motorized base, steered by on-device object detection. Working prototype.
+  \item \textbf{Hardware by \sllab}, the mount itself: ESP32 firmware, a custom PCB and
+        3D-printed parts, at about \$400 in total.
+\end{itemize}
+
+% ---------------------------------------------------------------- 2
+\section{System overview}
+
+Every part of \sllab{} shares one Postgres database, hosted on Supabase. The iOS apps read and
+write it directly, through access rules enforced by the database. Operations that need a
+secret, such as sending SMS, run on a server. Figure~\ref{fig:arch} shows the system as it
+is today, with planned components dashed.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[every node/.append style={minimum width=27mm, minimum height=13mm}]
+  % columns: Film, Fixture, website, API
+  \def\xa{0}\def\xb{3.5}\def\xc{7.6}\def\xd{11.1}
+  \node[box] (film) at (\xa,0) {\textbf{Film}\\\scriptsize iOS};
+  \node[box] (fix)  at (\xb,0) {\textbf{Fixture}\\\scriptsize iOS};
+  \node[box] (site) at (\xc,0) {\textbf{UCSDMCS}\\\scriptsize site · team app · admin};
+  \node[plan] (api) at (\xd,0) {\textbf{API}\\\scriptsize planned};
+
+  \node[box] (mount)  at (\xa,2.4) {\textbf{Mount}\\\scriptsize ESP32 · stepper};
+  \node[box] (yt)     at (\xb,2.4) {\textbf{YouTube}\\\scriptsize uploads};
+  \node[box] (twilio) at (\xc,2.4) {\textbf{Twilio}\\\scriptsize SMS};
+  \node[box] (se)     at (\xd,2.4) {\textbf{SportsEngine}\\\scriptsize standings};
+
+  \node[db, minimum width=138mm, minimum height=11mm] (db) at ({(\xa+\xd)/2},-2.4)
+    {\textbf{Supabase}\quad Postgres · access rules · storage};
+
+  \draw[arr] (film) -- node[note, left]{BLE} (mount);
+  \draw[arr] (film.north east) -- (yt.south west);
+  \draw[arr] (fix) -- node[note, above]{unlock} node[note, below]{reminders} (site);
+  \draw[arr] (site) -- (twilio);
+  \draw[arr] (se.south west) -- (site.north east);
+
+  \draw[parr, <->] (film.south) -- node[note, left]{planned} (film.south |- db.north);
+  \draw[arr, <->]  (fix.south)  -- (fix.south |- db.north);
+  \draw[arr, <->]  (site.south) -- (site.south |- db.north);
+  \draw[parr, <->] (api.south)  -- (api.south |- db.north);
+\end{tikzpicture}
+\caption{The system today. Fixture and the website share the database; Fixture calls the
+website for the two operations that need a server. Film does not yet use the shared backend.}
+\label{fig:arch}
+\end{figure}
+
+\begin{table}[h]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}l l X@{}}
+\toprule
+Component & Stack & Role \\
+\midrule
+Fixture by \sllab     & SwiftUI, supabase-swift           & Player and captain app \\
+UCSDMCS by \sllab     & Next.js 16, React 19, Tailwind 4  & Public site, web team app, admin, server endpoints \\
+Film by \sllab        & SwiftUI, AVFoundation, Vision, Core ML, Core Bluetooth & Recording and tracking \\
+Hardware by \sllab    & ESP32 (Arduino), TMC2209, NEMA 17, EasyEDA & Pan base and its controller \\
+Detection model       & Ultralytics YOLO26s, exported to Core ML & On-device detection \\
+Database              & Supabase (Postgres 17)            & Single source of truth \\
+\bottomrule
+\end{tabularx}
+\caption{Components and their technology.}
+\end{table}
+
+% ---------------------------------------------------------------- 3
+\section{Fixture by SLLAB}
+
+Fixture is the app the team uses every day. Its design constraint was adoption: a club
+cannot make 30 students create accounts, so joining had to take seconds.
+
+\begin{figure}[h]
+\centering
+\media{fixture-schedule.png}{0.23\linewidth}{62mm}{Fixture: season schedule with availability}\hfill
+\media{fixture-event.png}{0.23\linewidth}{62mm}{Fixture: an event with team responses}\hfill
+\media{fixture-reminder.png}{0.23\linewidth}{62mm}{Fixture: SMS reminder composer}\hfill
+\media{fixture-dashboard.png}{0.23\linewidth}{62mm}{Fixture: captain attendance dashboard}
+\caption{Fixture by \sllab{} on iOS.}
+\end{figure}
+
+\subsection{Players}
+
+A player joins with a team code from their captain, picks their name from the roster, confirms
+it, and adds a phone number. From then on, the app opens to the season's schedule: practices
+and games, each with its field, a directions link, and the player's own response. Marking
+going or not going is one tap, and each event shows who else is coming.
+
+\subsection{Captains}
+
+Captain mode unlocks with a separate code, which the server exchanges for a signed token. The
+app keeps the token in the Keychain and sends it with requests that the server performs on a
+captain's behalf, such as sending reminders. Captains can:
+
+\begin{itemize}
+  \item create games and practices, including a repeating practice schedule: choose the
+        weekdays and a date range, and every session is created at once;
+  \item edit and delete events, and see each event's responses grouped into going, not
+        going and no response;
+  \item send an SMS reminder to selected players, for example everyone who hasn't
+        responded;
+  \item track attendance across the season.
+\end{itemize}
+
+\textbf{Reminders never expose phone numbers.} The app sends the server roster IDs and a
+message, not numbers. The server looks up the numbers, sends the texts through a Twilio
+Messaging Service, which also handles STOP and HELP replies, and returns how many were
+delivered. The numbers never reach the captain's device, and nobody outside the roster can
+be texted through the endpoint.
+
+\textbf{Attendance is ranked by what a captain needs to act on.} For a player with $n$ events
+in the selected period, of which they declined $d$ and ignored $u$, the dashboard orders
+players by
+\[
+  \text{issue score} = 1.5\,\frac{u}{n} + \frac{d}{n}.
+\]
+No response is weighted more heavily than declining: a no lets a captain plan, but silence
+doesn't. Each player's page lists the events they attended and the ones they missed, and why.
+
+\subsection{Shipping concerns}
+
+\begin{itemize}
+  \item \textbf{Universal links.} Reminder texts contain a link such as
+        \code{app.ucsdmcs.com/events/<id>}, which opens the event directly in the app, or on the
+        web if the app isn't installed.
+  \item \textbf{Mandatory updates.} The database stores a minimum supported version. Older
+        builds show an update screen. The check fails open, so if it can't reach the server,
+        players are never locked out.
+  \item \textbf{Tests.} Unit tests cover the models, JSON decoding against the database's
+        shapes, availability grouping, attendance statistics and the data service.
+\end{itemize}
+
+% ---------------------------------------------------------------- 4
+\section{UCSDMCS by SLLAB}
+
+The club's website serves three audiences from one Next.js deployment: the public, players
+using Fixture on the web, and officers maintaining the season's data.
+
+\begin{figure}[h]
+\centering
+\media{site-schedule.png}{0.62\linewidth}{58mm}{Website: schedule and scores, desktop}\hfill
+\media{site-mobile.png}{0.30\linewidth}{58mm}{Website: standings, mobile}
+\caption{UCSDMCS by \sllab{} at \href{https://www.ucsdmcs.com}{ucsdmcs.com}.}
+\end{figure}
+
+\subsection{The public site}
+
+The schedule shows each game with the opponent's crest, home or away, the field, and the
+result, under a season summary: record, win percentage, streak, home and away records, and
+goal difference. Standings come from the league's SportsEngine API. The roster, tryout
+information with a registration QR code, and the club's description are also on the site.
+The schedule is also published as an RFC~5545 calendar feed, so a game added in the admin
+dashboard appears in subscribers' calendars without anyone re-sharing it.
+
+\textbf{Caching follows how the data changes.} Public pages are cached with no expiry and
+invalidated by a single tag whenever the admin dashboard writes, because club data is correct
+until someone changes it. Standings are the exception: league admins enter results on their
+own schedule, so they are fetched at most once a day.
+
+\subsection{The team app and the admin dashboard}
+
+The web team app is a port of Fixture, served at \code{app.ucsdmcs.com}. One deployment
+serves both hosts. A proxy step reads the request's host and serves the team section from the
+root, so the club site and the app have separate URLs without separate deployments.
+
+The web and iOS clients share one session format: a payload signed with HMAC-SHA256. The
+website keeps it in an HTTP-only cookie; the app sends the same token as a bearer header. One
+format and one verification path serve both clients.
+
+The admin dashboard lets officers edit teams and crests, the roster, the schedule, practices,
+socials, tournaments and fields. Writes happen in server actions, which check the session
+themselves rather than relying on the page layout, because a server action can be called
+directly.
+
+% ---------------------------------------------------------------- 5
+\section{Data model}
+
+The schema separates durable identity from seasonal participation, and generic events from
+their type-specific details. Figure~\ref{fig:er} shows the core tables.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+  % \tb{name}{position}{header}{fields}: header and body, wrapped by one node for arrows
+  \newcommand{\tb}[4]{%
+    \node[tbl, anchor=north] (#1-b) at #2 {#4};
+    \node[fill=accent, draw=accent, anchor=south, text width=31mm, inner sep=3pt,
+          align=center, tblh, rounded corners=1.5pt] (#1-h) at (#1-b.north) {\strut#3};
+    \node[fit=(#1-h)(#1-b), inner sep=0pt] (#1) {};
+  }
+  \tb{teams}{(0,0)}{teams}{org, sport\\name, division\\crest, team code}
+  \tb{seasons}{(4.4,0)}{seasons}{year\\is current}
+  \tb{people}{(8.8,0)}{people}{name, hometown\\phone, picture}
+  \tb{orgs}{(0,-2.7)}{orgs}{name}
+  \tb{events}{(4.4,-2.7)}{events}{team, season\\type, date}
+  \tb{roster}{(8.8,-2.7)}{roster}{person, team, season\\number, position, class}
+  \tb{sub}{(0,-5.2)}{event subtypes}{games: home, away, score\\practices: notes\\tournaments, socials}
+  \tb{avail}{(8.8,-5.2)}{availability}{event, roster entry\\yes / no / maybe}
+  \tb{fields}{(0,-7.9)}{fields}{name, address\\parking, picture}
+
+  \draw[arr] (teams.south) -- (orgs.north);
+  \draw[arr] (events.north) -- (seasons.south);
+  \draw[arr] (events.north west) -- (teams.south east);
+  \draw[arr] (roster.north) -- (people.south);
+  \draw[arr] (roster.north west) -- (seasons.south east);
+  \draw[arr] (roster.east) -- ++(0.45,0) |- ([yshift=4mm]teams.north) -- (teams.north);
+  \draw[arr] (avail.north) -- (roster.south);
+  \draw[arr] (avail.north west) -- (events.south east);
+  \draw[arr] (sub.north east) -- (events.south west);
+  \draw[arr] (sub.south) -- node[note, right]{field} (fields.north);
+  \draw[arr] (sub.west) -- ++(-0.45,0) |- node[note, pos=0.25, left]{home,\\away} (teams.west);
+\end{tikzpicture}
+\caption{Core tables; arrows point from a row to the row it references. Games, practices,
+tournaments and socials each have their own table keyed by the event, grouped here.}
+\label{fig:er}
+\end{figure}
+
+\begin{itemize}
+  \item \textbf{People are not roster entries.} A person exists once; a roster entry is that
+        person on one team in one season, with that season's number, position and class. A
+        player's history, and later their career statistics and alumni status, follow
+        from this.
+  \item \textbf{Events are a supertype.} Every event has a team, season, type and time, so the
+        schedule, availability and reminders work the same for all of them. Details specific
+        to a game or a practice live in subtype tables keyed by the event.
+  \item \textbf{Availability belongs to a roster entry and an event}, with a uniqueness
+        constraint on the pair, so a response is an upsert and can never be duplicated.
+  \item \textbf{Games name two teams, not ``us'' and an opponent.} A game reads as home or
+        away depending on whose side it is viewed from, so the same row serves both clubs once
+        both are on the platform.
+  \item \textbf{Constraints live in the database.} Allowed positions, classes and statuses are
+        check constraints, and a partial unique index allows only one current season.
+\end{itemize}
+
+Some of these were right for one team and must change for many. The single current season is
+global, not per team; positions are soccer's; and joining relies on shared team and captain
+codes rather than personal accounts. Section~\ref{sec:roadmap} covers how each changes.
+
+% ---------------------------------------------------------------- 6
+\section{Film by SLLAB and the tracking mount}
+
+Film turns a phone into an unattended camera operator. The phone records on its ultra-wide
+camera while a detection model finds play in the frame, and a motorized base turns to keep it
+centered.
+
+\begin{figure}[h]
+\centering
+\media{mount.jpg}{0.31\linewidth}{50mm}{The assembled mount with a phone}\hfill
+\media{pcb.jpg}{0.31\linewidth}{50mm}{The controller PCB, assembled}\hfill
+\media{tracking.png}{0.31\linewidth}{50mm}{A frame from a tracking test}
+\caption{Hardware by \sllab.}
+\end{figure}
+
+\subsection{The control loop}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=5mm]
+  \node[box, minimum width=19mm] (cam) {Camera\\\scriptsize every frame};
+  \node[box, right=of cam, minimum width=19mm] (det) {YOLO26s\\\scriptsize every 3rd frame};
+  \node[box, right=of det, minimum width=19mm] (sel) {Target\\\scriptsize best person};
+  \node[box, right=of sel, minimum width=19mm] (ema) {Smooth\\\scriptsize EMA};
+  \node[box, right=14mm of ema, minimum width=19mm] (esp) {ESP32\\\scriptsize deadzone};
+  \node[box, right=of esp, minimum width=19mm] (mot) {Stepper\\\scriptsize ≈3.4° nudge};
+  \draw[arr] (cam) -- (det); \draw[arr] (det) -- (sel); \draw[arr] (sel) -- (ema);
+  \draw[arr] (ema) -- node[note, above=1pt]{1 byte} node[note, below=1pt]{BLE} (esp);
+  \draw[arr] (esp) -- (mot);
+  \begin{scope}[on background layer]
+    \node[fit=(cam)(ema), fill=wash, rounded corners=3pt, inner sep=4pt,
+          label={[note]below:iPhone}] {};
+    \node[fit=(esp)(mot), fill=wash, rounded corners=3pt, inner sep=4pt,
+          label={[note]below:mount}] {};
+  \end{scope}
+\end{tikzpicture}
+\caption{From camera frame to motor.}
+\end{figure}
+
+\textbf{Detection.} Frames go to a YOLO26s model through Vision and Core ML. Only every third
+frame is processed, keeping inference within budget while the phone also records. The target
+is the most confident person detection above 0.4 confidence.
+
+\textbf{Error signal.} With $x_c \in [0,1]$ the target's horizontal center in normalized image
+coordinates, the offset from the center of the frame is
+\[
+  o_t = 2\,(x_c - 0.5) \in [-1, 1],
+\]
+smoothed with an exponential moving average so a single noisy detection doesn't swing the
+camera:
+\[
+  s_t = 0.7\,s_{t-1} + 0.3\,o_t.
+\]
+When nothing is detected, the average resets, and the base holds still until play is found.
+
+\textbf{Protocol.} The smoothed offset is quantized to one signed byte,
+$b = \operatorname{trunc}(127\,s_t)$, and written over Bluetooth Low Energy without
+acknowledgement. One byte with no round trip keeps latency low, and a lost command is replaced
+by the next one a fraction of a second later.
+
+\textbf{Firmware.} The ESP32 keeps only the newest command: commands that arrive while the
+motor is moving overwrite each other instead of queueing, so the mount never moves toward
+where the target \emph{was}. Offsets with $|b| \le 15$, about 12\% of full scale, are ignored,
+so the camera holds steady when play is roughly centered instead of hunting back and forth.
+Outside the deadzone, the motor moves 15 microsteps toward the target. The driver runs at
+$1/8$ microstepping on a 200-step motor, so each move is
+\[
+  \frac{15}{200 \times 8} \times 360^\circ \approx 3.4^\circ.
+\]
+
+\subsection{Hardware}
+
+The base is a NEMA~17 stepper driven by a TMC2209, whose quiet mode keeps motor noise off the
+recording's audio. The controller is a custom two-layer, through-hole PCB of about
+45\,×\,65\,mm, designed in EasyEDA, with the ESP32 and the driver in header sockets so either can
+be swapped without soldering. A 12\,V supply feeds both the motor and the ESP32, with a 100\,µF
+bulk capacitor to absorb current spikes when the motor steps. The housing, shaft coupler and
+phone holder are 3D-printed. The design went from a hand-wired breadboard to the printed base
+and then the PCB, and the enclosure and board were refined with a mechanical engineer and a
+systems engineer. The complete system costs about \$400, against roughly \$2{,}000 for
+commercial auto-tracking cameras.
+
+\subsection{Recording, library and upload}
+
+Film records on a timer or immediately, keeps videos and thumbnails in its own library
+rather than the camera roll, excludes them from iCloud backup, and stores metadata with
+SwiftData. Videos upload to YouTube as unlisted through the YouTube Data API's resumable
+protocol, and the link is saved with the video.
+
+\subsection{The detection model}
+
+The shipping model is YOLO26s, tracking people. To track the ball, the model is being
+fine-tuned with Ultralytics on a public Roboflow soccer-ball dataset, at $640 \times 640$ for
+100 epochs on the Apple GPU. A second public dataset, labelling ball, goalkeeper, player and
+referee, is prepared for later work. The result is exported to Core ML with non-maximum
+suppression built in, so the app receives final detections.
+
+\subsection{Before release}
+
+Film is a working prototype. Before release, upload authorization moves to the platform's
+API, so each team uploads to its own channel and the app holds no credentials. Uploads must
+stream from disk instead of loading whole files into memory, since full-length matches are
+large. Tracking moves from the most confident player to the ball. And each video should be
+linked to its game through the shared backend, so film appears in Fixture.
+
+% ---------------------------------------------------------------- 7
+\section{Engineering practice}
+
+\begin{itemize}
+  \item \textbf{One repository.} The project began as five repositories. They were merged into
+        one, preserving all of their history, so a schema change and every client it affects can
+        land in one commit. Each app keeps its own folder and toolchain; shared code goes in
+        packages when a second consumer needs it.
+  \item \textbf{The schema is code.} The live database was captured as a baseline migration.
+        From then on, every change is an ordered SQL file applied with the Supabase CLI, never
+        an edit in the dashboard. The CLI version is pinned, because a major release changed the
+        default target of database commands from the remote project to the local one.
+  \item \textbf{Secrets stay out of git.} Every repository's history was scanned for keys
+        before the merge. Only templates of required variables are committed, never values.
+        The server's secret database key cannot reach a browser bundle: the module that holds
+        it is marked server-only, which makes importing it from client code a build error
+        rather than a convention.
+  \item \textbf{Large artifacts stay out of git.} Training data, runs and weights are
+        ignored; the repository holds the scripts and dataset definitions to re-create them.
+  \item \textbf{CI on what changed.} A path-filtered workflow builds and lints each web app
+        when it changes.
+\end{itemize}
+
+% ---------------------------------------------------------------- 8
+\section{Roadmap}
+\label{sec:roadmap}
+
+The next stage turns one team's tools into a platform that any club can join without a
+developer. Figure~\ref{fig:target} shows the target structure.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=4mm]
+  \node[db, minimum width=124mm] (db) {\textbf{One database}\quad accounts · memberships · teams · events · people · matches · messages · sites};
+  \node[box, above=12mm of db.north west, anchor=south west, minimum width=22mm] (fix) {Fixture\\\scriptsize iOS};
+  \node[box, right=of fix, minimum width=22mm] (film) {Film\\\scriptsize iOS};
+  \node[box, right=of film, minimum width=22mm] (web) {Platform web\\\scriptsize console · editor};
+  \node[box, right=of web, minimum width=22mm] (sites) {Club sites\\\scriptsize every club};
+  \node[box, right=of sites, minimum width=22mm] (api) {API\\\scriptsize logic · integrations};
+  \foreach \n in {fix,film,web,sites,api} \draw[arr, <->] (\n.south) -- (\n.south |- db.north);
+\end{tikzpicture}
+\caption{Target structure: every client on one backend, with platform logic in one API.}
+\label{fig:target}
+\end{figure}
+
+\begin{enumerate}
+  \item \textbf{Accounts and access.} Verified sign-in by phone or email, and a membership
+        table relating each account to its teams and roles. Access rules in the database then
+        scope every read and write to the caller's teams, and captain becomes a role granted by
+        another captain instead of a shared code. Fixture's mandatory-update mechanism moves
+        every player onto the new version before the old paths are removed.
+  \item \textbf{A platform API.} Server operations move from the club's website into a
+        dedicated service with versioned routes, so no app depends on a club's domain. Messaging
+        becomes a subsystem: templates, audience segments, scheduled sends, consent and delivery
+        records.
+  \item \textbf{Multi-team data.} Seasons per team, sport-specific positions, and a shared
+        directory of schools, teams, crests, fields and leagues that every club references
+        instead of copying. Each new club then improves the data for the others.
+  \item \textbf{Matches and statistics.} Lineups and match events, from which player profiles,
+        career statistics and standings follow.
+  \item \textbf{Club sites as data.} One deployment renders every club's site from its domain,
+        with content stored as typed blocks and themed with the club's colors and crest. The
+        UC San Diego site becomes the first set of rows instead of a codebase.
+  \item \textbf{Graphics, gear and dues.} Matchday and result graphics generated from match
+        data; kit orders that collect sizes against roster numbers; dues collected through each
+        club's own payment account.
+  \item \textbf{Film on the platform.} Videos attached to their events, from Film or any other
+        source, and visible in Fixture.
+\end{enumerate}
+
+% ---------------------------------------------------------------- 9
+\section{Timeline}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+2026 & Milestone \\
+\midrule
+April     & Film begins: camera capture and live preview. \\
+June      & Detection runs end to end, from frame capture to bounding boxes, on device. \\
+July      & The phone steers the mount over Bluetooth. \\
+August    & Recording moves to the ultra-wide camera and tracks at 10--15\,ft. In-app library and
+            YouTube upload. sllab.io launches. \\
+September & The club website launches with the admin dashboard, live standings and tryouts. Fixture
+            enters beta (1.0.0), and its web version follows. \\
+October   & SMS reminders and Keychain-backed captain sessions. Attendance tracking for captains.
+            A new schema, unit tests and mandatory updates. \\
+November  & Past events in Fixture. The mount's firmware, PCB and CAD are published. The five
+            repositories are merged into one. \\
+\bottomrule
+\end{tabularx}
+\caption{Development history, from the projects' commit logs.}
+\end{table}
+
+% ---------------------------------------------------------------- AI
+\section*{AI Disclosure}
+
+Parts of this codebase and this write-up were written with the help of AI. All files were
+reviewed by a human, but they are provided as-is, with no guarantee that they are correct,
+secure, or fit for any particular purpose.
+
+\end{document}
