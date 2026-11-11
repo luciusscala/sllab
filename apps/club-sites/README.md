@@ -1,0 +1,1 @@
+This is a Next.js web application for the UCSD Men's Club Soccer team. It contains general club information, standings, roster, and schedule. It also has an admin dashboard for easy changes to seasonal information (ie roster, schedule, and opponent information).
