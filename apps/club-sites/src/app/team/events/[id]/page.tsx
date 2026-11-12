@@ -9,17 +9,17 @@ import { AvailabilityBadge } from "@/components/team/availability-badge";
 import { AvailabilityPicker } from "@/components/team/availability-picker";
 import { TYPE_COLOR } from "@/components/team/event-row";
 import { MemberList } from "@/components/team/member-list";
+import { canRespond, isStaff, requireMember } from "@/lib/auth";
 import {
   type AvailabilityStatus,
+  getActiveRoster,
   getAvailability,
   getCurrentSeason,
   getEvent,
-  getRoster,
   withoutResponse,
 } from "@/lib/data/team";
 import { formatDayHeading, formatTime } from "@/lib/format";
 import { teamBase } from "@/lib/team-path";
-import { requireTeamSession } from "@/lib/team-session";
 
 export const metadata: Metadata = { title: "Event" };
 
@@ -29,22 +29,29 @@ const LINK =
   "text-sm font-medium text-blue underline underline-offset-4 transition hover:opacity-70";
 
 export default async function EventPage(props: PageProps<"/team/events/[id]">) {
-  const session = await requireTeamSession();
+  const membership = await requireMember();
   const base = await teamBase();
   const { id } = await props.params;
 
-  const [event, season] = await Promise.all([getEvent(id, session.teamId), getCurrentSeason()]);
+  const [event, season] = await Promise.all([
+    getEvent(id, membership.teamId),
+    getCurrentSeason(),
+  ]);
   if (!event) notFound();
 
+  // The active roster: a player marked away is neither listed nor counted
+  // as "No Response". Their earlier answers simply aren't shown.
   const [roster, availability] = await Promise.all([
-    season ? getRoster(season.id, session.teamId) : [],
+    season ? getActiveRoster(season.id, membership.teamId) : [],
     getAvailability([event.id]),
   ]);
-  const responses = availability.get(event.id) ?? [];
   const byRoster = new Map(roster.map((member) => [member.rosterId, member]));
+  const responses = (availability.get(event.id) ?? []).filter((response) =>
+    byRoster.has(response.rosterId),
+  );
 
   const myStatus =
-    responses.find((response) => response.rosterId === session.rosterId)?.status ?? null;
+    responses.find((response) => response.rosterId === membership.rosterId)?.status ?? null;
 
   const membersWith = (status: AvailabilityStatus) =>
     responses
@@ -68,7 +75,7 @@ export default async function EventPage(props: PageProps<"/team/events/[id]">) {
             ‹ Schedule
           </Link>
 
-          {session.captain && (
+          {isStaff(membership) && (
             <div className="flex items-center gap-4">
               <Link href={`${base}/events/${event.id}/remind`} className={LINK}>
                 Remind
@@ -140,11 +147,15 @@ export default async function EventPage(props: PageProps<"/team/events/[id]">) {
           )}
         </div>
 
-        {/* Your availability */}
-        <h2 className="headline mt-6 text-base">Your Availability</h2>
-        <div className="mt-2">
-          <AvailabilityPicker eventId={event.id} selected={myStatus} />
-        </div>
+        {/* Your availability: players and captains only */}
+        {canRespond(membership) && (
+          <>
+            <h2 className="headline mt-6 text-base">Your Availability</h2>
+            <div className="mt-2">
+              <AvailabilityPicker eventId={event.id} selected={myStatus} />
+            </div>
+          </>
+        )}
 
         {/* Team responses */}
         <h2 className="headline mt-8 text-base">Team Responses</h2>

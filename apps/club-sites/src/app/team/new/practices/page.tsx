@@ -4,12 +4,12 @@ import { FormCard } from "@/components/team/form-card";
 import { RepeatingPracticeForm } from "@/components/team/repeating-practice-form";
 import { listFields } from "@/lib/data/admin";
 import { teamBase } from "@/lib/team-path";
-import { requireCaptain } from "@/lib/team-session";
+import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Repeating Practices" };
 
 export default async function NewRepeatingPracticesPage() {
-  await requireCaptain();
+  await requireStaff();
   const fields = await listFields();
 
   return (

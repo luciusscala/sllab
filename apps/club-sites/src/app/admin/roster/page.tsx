@@ -4,14 +4,13 @@ import { createPlayer, deletePlayer, updatePlayer } from "@/app/admin/actions";
 import { SeasonPicker } from "@/components/season-picker";
 import { AdminForm } from "@/components/admin/admin-form";
 import { SetupNotice } from "@/components/admin/setup-notice";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listRoster } from "@/lib/data/admin";
+import { CLASSES, POSITIONS } from "@/lib/data/roster";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
 export const metadata: Metadata = { title: "Admin · Roster" };
 
-const CLASSES = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
-const POSITIONS = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
 
 function Select({
   name,
@@ -91,6 +90,11 @@ export default async function AdminRosterPage(
               <Select name="class" options={CLASSES} required />
             </div>
             <div>
+              <label className="field-label" htmlFor="phone">Phone</label>
+              <input id="phone" name="phone" type="tel" inputMode="numeric" className="field" placeholder="(555) 123-4567" />
+              <p className="mt-1 text-xs text-muted">Links their sign-in to this roster spot.</p>
+            </div>
+            <div>
               <label className="field-label" htmlFor="picture">Photo</label>
               <input id="picture" name="picture" type="file" accept="image/*" className="field" />
             </div>
@@ -107,7 +111,7 @@ export default async function AdminRosterPage(
               <input type="hidden" name="person_id" value={entry.personId} />
               <input type="hidden" name="entry_id" value={entry.entryId} />
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
                 <div className="lg:col-span-2">
                   <label className="field-label">Name</label>
                   <input name="name" defaultValue={entry.name} required className="field" />
@@ -127,6 +131,10 @@ export default async function AdminRosterPage(
                 <div>
                   <label className="field-label">Hometown</label>
                   <input name="hometown" defaultValue={entry.hometown ?? ""} className="field" />
+                </div>
+                <div>
+                  <label className="field-label">Phone</label>
+                  <input name="phone" type="tel" inputMode="numeric" defaultValue={entry.phone ?? ""} className="field" />
                 </div>
               </div>
 

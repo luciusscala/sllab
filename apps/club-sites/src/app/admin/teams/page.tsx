@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { createTeam } from "@/app/admin/actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { SetupNotice } from "@/components/admin/setup-notice";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/auth";
 import { listTeams } from "@/lib/data/admin";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 

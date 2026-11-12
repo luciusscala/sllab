@@ -1,14 +1,16 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { PUBLIC_DATA } from "@/lib/data/cache";
 import type { EventType } from "@/lib/data/events";
-import { requireAdminClient } from "@/lib/supabase-admin";
 import "server-only";
 
 /**
- * Writes shared by the admin dashboard and the team section. Neither gate
- * lives here: every caller checks `requireAdmin()` or `requireCaptain()`
- * itself before reaching these, which is why the file is not an action file.
+ * Writes shared by the admin dashboard and the team section. Each takes the
+ * client to write with: the team app passes the signed-in person's, so the
+ * database's staff policies decide; the dashboard passes the admin client,
+ * behind `requireAdmin()`.
  */
 
 /** Refresh every public page after a write, rather than waiting out the ISR window. */
@@ -48,6 +50,7 @@ export type Columns = Record<string, string | number | boolean | null>;
  * dateless placeholder behind. Returns an error message, or null on success.
  */
 export async function insertWithEvent(
+  client: SupabaseClient,
   table: EventTable,
   eventType: EventType,
   teamId: string,
@@ -55,8 +58,6 @@ export async function insertWithEvent(
   date: string,
   columns: Columns,
 ) {
-  const client = requireAdminClient();
-
   const { data: event, error: eventError } = await client
     .from("events")
     .insert({
@@ -88,13 +89,12 @@ export async function insertWithEvent(
  * both the app and the site have to hand.
  */
 export async function updateWithEvent(
+  client: SupabaseClient,
   table: EventTable,
   eventId: string,
   date: string,
   columns: Columns,
 ) {
-  const client = requireAdminClient();
-
   const { error: eventError } = await client
     .from("events")
     .update({ event_date: date })
@@ -110,25 +110,10 @@ export async function updateWithEvent(
 }
 
 /**
- * Row first, then the players' responses, then the event, so the foreign keys
- * to the event are satisfied at every step.
+ * The event's row cascades to its subtype row and the players' responses, so
+ * one delete is the whole job.
  */
-export async function deleteWithEvent(table: EventTable, eventId: string) {
-  const client = requireAdminClient();
-
-  const { error } = await client.from(table).delete().eq("event_id", eventId);
-  if (error) return error.message;
-
-  const { error: availabilityError } = await client
-    .from("availability")
-    .delete()
-    .eq("event_id", eventId);
-  if (availabilityError) return availabilityError.message;
-
-  const { error: eventError } = await client
-    .from("events")
-    .delete()
-    .eq("id", eventId);
-
-  return eventError ? eventError.message : null;
+export async function deleteWithEvent(client: SupabaseClient, eventId: string) {
+  const { error } = await client.from("events").delete().eq("id", eventId);
+  return error ? error.message : null;
 }

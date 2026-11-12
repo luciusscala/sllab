@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { logout } from "@/app/admin/actions";
-import { isAdmin } from "@/lib/admin-auth";
+import { signOut } from "@/app/auth/actions";
+import { adminMembership } from "@/lib/auth";
 
 const NAV = [
   { href: "/admin/roster", label: "Roster" },
@@ -15,11 +15,11 @@ const NAV = [
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   // Convenience only — every page and action guards itself with requireAdmin().
-  const signedIn = await isAdmin();
+  const admin = await adminMembership();
 
   return (
     <>
-      {signedIn && (
+      {admin && (
         <div className="border-b border-white/15">
           <div className="container-page flex items-center gap-5 py-3">
             <span className="text-sm font-semibold text-yellow">Admin</span>
@@ -30,7 +30,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
                 </Link>
               ))}
             </nav>
-            <form action={logout} className="ml-auto">
+            <form action={signOut} className="ml-auto flex items-center gap-3">
+              <span className="hidden text-xs text-white/50 sm:inline">{admin.personName}</span>
               <button type="submit" className="text-sm text-white/50 hover:text-white">
                 Sign out
               </button>

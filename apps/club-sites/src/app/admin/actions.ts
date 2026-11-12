@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { CLUB_TEAM_ID } from "@/lib/club";
 import { EVENT_TYPE } from "@/lib/data/events";
@@ -11,13 +10,7 @@ import {
   revalidatePublic,
   updateWithEvent,
 } from "@/lib/data/events-write";
-
-import {
-  checkPassword,
-  endSession,
-  requireAdmin,
-  startSession,
-} from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/auth";
 import { sidesFor } from "@/lib/data/schedule";
 import { fromDateTimeLocal } from "@/lib/format";
 import { requireAdminClient } from "@/lib/supabase-admin";
@@ -36,6 +29,33 @@ const int = (data: FormData, key: string) => {
   return Number.isInteger(parsed) ? parsed : null;
 };
 
+/** A typed phone as the database stores it (digits with country code), "" when blank, or null when it isn't one. */
+function phoneDigits(data: FormData) {
+  const raw = text(data, "phone");
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10) return `1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return digits;
+  return null;
+}
+
+/**
+ * Sets or clears a person's number. The number is how a sign-in finds its
+ * roster spot, so adding one here is what lets a player the dashboard created
+ * sign in as themselves. Consent to reminders is theirs to give, on sign-in.
+ */
+async function savePhone(personId: string, phone: string) {
+  const client = requireAdminClient();
+  if (!phone) {
+    const { error } = await client.from("people_contacts").delete().eq("person_id", personId);
+    return error?.message ?? null;
+  }
+  const { error } = await client
+    .from("people_contacts")
+    .upsert({ person_id: personId, phone }, { onConflict: "person_id" });
+  return error ? (error.code === "23505" ? "That number belongs to someone else." : error.message) : null;
+}
+
 /** Uploads to a public bucket and returns the object key, or null if no file. */
 async function uploadImage(file: FormData, key: string, bucket: string) {
   const value = file.get(key);
@@ -50,20 +70,6 @@ async function uploadImage(file: FormData, key: string, bucket: string) {
 
   if (error) throw new Error(`Upload failed: ${error.message}`);
   return objectKey;
-}
-
-export async function login(_state: ActionState, data: FormData) {
-  const candidate = text(data, "password");
-  if (!candidate || !checkPassword(candidate)) {
-    return { error: "Incorrect password." };
-  }
-  await startSession();
-  redirect("/admin");
-}
-
-export async function logout() {
-  await endSession();
-  redirect("/admin/login");
 }
 
 export async function createTeam(_state: ActionState, data: FormData) {
@@ -201,6 +207,7 @@ export async function createGame(_state: ActionState, data: FormData) {
   if (!kickoff) return { error: "Date is not a valid date and time." };
 
   const error = await insertWithEvent(
+    requireAdminClient(),
     "games",
     EVENT_TYPE.game,
     CLUB_TEAM_ID,
@@ -228,7 +235,7 @@ export async function updateGame(_state: ActionState, data: FormData) {
   const kickoff = dateTime(data, "game_date");
   if (!kickoff) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("games", eventId, kickoff, gameColumns(data));
+  const error = await updateWithEvent(requireAdminClient(), "games", eventId, kickoff, gameColumns(data));
   if (error) return { error };
 
   revalidatePublic();
@@ -243,7 +250,7 @@ export async function deleteGame(_state: ActionState, data: FormData) {
   const eventId = text(data, "event_id");
   if (!id || !eventId) return { error: "Missing game." };
 
-  const error = await deleteWithEvent("games", eventId);
+  const error = await deleteWithEvent(requireAdminClient(), eventId);
   if (error) return { error };
 
   revalidatePublic();
@@ -274,6 +281,7 @@ export async function createPractice(_state: ActionState, data: FormData) {
   if (!date) return { error: "Date is not a valid date and time." };
 
   const error = await insertWithEvent(
+    requireAdminClient(),
     "practices",
     EVENT_TYPE.practice,
     CLUB_TEAM_ID,
@@ -299,7 +307,7 @@ export async function updatePractice(_state: ActionState, data: FormData) {
   const date = dateTime(data, "date");
   if (!date) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("practices", eventId, date, practiceColumns(data));
+  const error = await updateWithEvent(requireAdminClient(), "practices", eventId, date, practiceColumns(data));
   if (error) return { error };
 
   revalidatePath("/admin/practices");
@@ -313,7 +321,7 @@ export async function deletePractice(_state: ActionState, data: FormData) {
   const eventId = text(data, "event_id");
   if (!id || !eventId) return { error: "Missing practice." };
 
-  const error = await deleteWithEvent("practices", eventId);
+  const error = await deleteWithEvent(requireAdminClient(), eventId);
   if (error) return { error };
 
   revalidatePath("/admin/practices");
@@ -344,6 +352,7 @@ export async function createSocialEvent(_state: ActionState, data: FormData) {
   if (!date) return { error: "Date is not a valid date and time." };
 
   const error = await insertWithEvent(
+    requireAdminClient(),
     "social_events",
     EVENT_TYPE.social,
     CLUB_TEAM_ID,
@@ -369,7 +378,7 @@ export async function updateSocialEvent(_state: ActionState, data: FormData) {
   const date = dateTime(data, "date");
   if (!date) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("social_events", eventId, date, socialEventColumns(data));
+  const error = await updateWithEvent(requireAdminClient(), "social_events", eventId, date, socialEventColumns(data));
   if (error) return { error };
 
   revalidatePath("/admin/socials");
@@ -383,7 +392,7 @@ export async function deleteSocialEvent(_state: ActionState, data: FormData) {
   const eventId = text(data, "event_id");
   if (!id || !eventId) return { error: "Missing social event." };
 
-  const error = await deleteWithEvent("social_events", eventId);
+  const error = await deleteWithEvent(requireAdminClient(), eventId);
   if (error) return { error };
 
   revalidatePath("/admin/socials");
@@ -411,6 +420,7 @@ export async function createTournament(_state: ActionState, data: FormData) {
   if (!date) return { error: "Date is not a valid date and time." };
 
   const error = await insertWithEvent(
+    requireAdminClient(),
     "tournaments",
     EVENT_TYPE.tournament,
     CLUB_TEAM_ID,
@@ -436,7 +446,7 @@ export async function updateTournament(_state: ActionState, data: FormData) {
   const date = dateTime(data, "date");
   if (!date) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("tournaments", eventId, date, tournamentColumns(data));
+  const error = await updateWithEvent(requireAdminClient(), "tournaments", eventId, date, tournamentColumns(data));
   if (error) return { error };
 
   revalidatePath("/admin/tournaments");
@@ -450,7 +460,7 @@ export async function deleteTournament(_state: ActionState, data: FormData) {
   const eventId = text(data, "event_id");
   if (!id || !eventId) return { error: "Missing tournament." };
 
-  const error = await deleteWithEvent("tournaments", eventId);
+  const error = await deleteWithEvent(requireAdminClient(), eventId);
   if (error) return { error };
 
   revalidatePath("/admin/tournaments");
@@ -468,6 +478,8 @@ export async function createPlayer(_state: ActionState, data: FormData) {
   if (!name || !seasonId || !playerClass || !position) {
     return { error: "Name, season, class and position are required." };
   }
+  const phone = phoneDigits(data);
+  if (phone === null) return { error: "Enter a 10-digit phone number, or leave it blank." };
 
   const picturePath = await uploadImage(data, "picture", "player_pictures");
 
@@ -495,6 +507,19 @@ export async function createPlayer(_state: ActionState, data: FormData) {
     return { error: rosterError.message };
   }
 
+  // On the roster means on the team: an active player, already reviewed.
+  await client
+    .from("memberships")
+    .upsert(
+      { team_id: CLUB_TEAM_ID, person_id: inserted.id, role: "player", status: "active", is_new: false },
+      { onConflict: "team_id,person_id" },
+    );
+
+  if (phone) {
+    const phoneError = await savePhone(inserted.id, phone);
+    if (phoneError) return { error: `Player added, but the number wasn't saved: ${phoneError}` };
+  }
+
   revalidatePublic();
   revalidatePath("/admin/roster");
   return null;
@@ -508,6 +533,8 @@ export async function updatePlayer(_state: ActionState, data: FormData) {
   const entryId = text(data, "entry_id");
   const name = text(data, "name");
   if (!personId || !entryId || !name) return { error: "Missing player." };
+  const phone = phoneDigits(data);
+  if (phone === null) return { error: "Enter a 10-digit phone number, or leave it blank." };
 
   const picturePath = await uploadImage(data, "picture", "player_pictures");
 
@@ -533,6 +560,9 @@ export async function updatePlayer(_state: ActionState, data: FormData) {
     .eq("id", entryId);
 
   if (rosterError) return { error: rosterError.message };
+
+  const phoneError = await savePhone(personId, phone);
+  if (phoneError) return { error: phoneError };
 
   revalidatePublic();
   revalidatePath("/admin/roster");

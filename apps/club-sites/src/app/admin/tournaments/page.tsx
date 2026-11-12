@@ -8,7 +8,7 @@ import {
 import { AdminForm } from "@/components/admin/admin-form";
 import { SetupNotice } from "@/components/admin/setup-notice";
 import { SeasonPicker } from "@/components/season-picker";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listFields, listTournaments } from "@/lib/data/admin";
 import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 import { isAdminConfigured } from "@/lib/supabase-admin";

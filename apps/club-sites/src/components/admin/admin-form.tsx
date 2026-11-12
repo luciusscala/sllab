@@ -24,7 +24,7 @@ export function AdminForm({
 }: {
   action: Action;
   submitLabel: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   /** When set, the browser asks this before the action runs. */
   confirm?: string;

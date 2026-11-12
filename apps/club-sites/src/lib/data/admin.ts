@@ -44,6 +44,8 @@ export type AdminRosterEntry = {
   year: string;
   position: string;
   number: number | null;
+  /** Digits with the country code, from `people_contacts`; the dashboard may see it. */
+  phone: string | null;
 };
 
 export type AdminPractice = {
@@ -145,7 +147,8 @@ type RosterRow = {
 };
 
 export async function listRoster(seasonId: string): Promise<AdminRosterEntry[]> {
-  const { data, error } = await requireAdminClient()
+  const client = requireAdminClient();
+  const { data, error } = await client
     .from("roster")
     .select("id, class, position, number, person:people(id, name, hometown, picture_path)")
     .eq("season_id", seasonId)
@@ -153,7 +156,14 @@ export async function listRoster(seasonId: string): Promise<AdminRosterEntry[]> 
 
   if (error) throw new Error(`Failed to load roster: ${error.message}`);
 
-  return ((data ?? []) as unknown as RosterRow[])
+  const rows = (data ?? []) as unknown as RosterRow[];
+  const personIds = rows.flatMap((row) => (one(row.person) ? [one(row.person)!.id] : []));
+  const { data: contacts } = personIds.length
+    ? await client.from("people_contacts").select("person_id, phone").in("person_id", personIds)
+    : { data: [] };
+  const phoneOf = new Map((contacts ?? []).map((row) => [row.person_id as string, row.phone as string]));
+
+  return rows
     .flatMap((row) => {
       const person = one(row.person);
       if (!person) return [];
@@ -167,6 +177,7 @@ export async function listRoster(seasonId: string): Promise<AdminRosterEntry[]> 
           year: row.class,
           position: row.position,
           number: row.number,
+          phone: phoneOf.get(person.id) ?? null,
         },
       ];
     })

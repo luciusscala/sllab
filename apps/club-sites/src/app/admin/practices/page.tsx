@@ -4,7 +4,7 @@ import { createPractice, deletePractice, updatePractice } from "@/app/admin/acti
 import { AdminForm } from "@/components/admin/admin-form";
 import { SetupNotice } from "@/components/admin/setup-notice";
 import { SeasonPicker } from "@/components/season-picker";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listFields, listPractices } from "@/lib/data/admin";
 import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 import { isAdminConfigured } from "@/lib/supabase-admin";

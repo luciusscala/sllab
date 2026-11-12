@@ -1,3 +1,4 @@
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { APP_HOST, TEAM_SECTION, isAppHost } from "@/lib/app-host";
@@ -8,7 +9,7 @@ import { APP_HOST, TEAM_SECTION, isAppHost } from "@/lib/app-host";
  * not listed belongs to the club site and is sent back to it, which is what
  * the shared header's nav links are.
  */
-const APP_PATHS = ["/settings", "/join", "/events", "/new"];
+const APP_PATHS = ["/settings", "/join", "/events", "/new", "/members"];
 
 const within = (pathname: string, path: string) =>
   pathname === path || pathname.startsWith(`${path}/`);
@@ -25,7 +26,7 @@ const within = (pathname: string, path: string) =>
  * Temporary redirects throughout: a permanent one would be cached in players'
  * browsers long after any change of mind here.
  */
-export default function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const inSection = within(pathname, TEAM_SECTION);
 
@@ -46,7 +47,7 @@ export default function proxy(request: NextRequest) {
 
     const rewritten = request.nextUrl.clone();
     rewritten.pathname = pathname === "/" ? TEAM_SECTION : `${TEAM_SECTION}${pathname}`;
-    return NextResponse.rewrite(rewritten);
+    return withSession(request, NextResponse.rewrite(rewritten));
   }
 
   // Without APP_HOST there is no subdomain to send them to, so /team keeps
@@ -60,7 +61,36 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(moved, 307);
   }
 
-  return NextResponse.next();
+  return withSession(request, NextResponse.next());
+}
+
+/**
+ * Keeps the Supabase session alive. Access tokens last an hour; when one has
+ * expired the client here refreshes it and the new cookies ride out on the
+ * response, which Server Components (which can't set cookies) rely on. Does
+ * nothing when there is no session or no configuration.
+ */
+async function withSession(request: NextRequest, response: NextResponse) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key || request.cookies.getAll().length === 0) return response;
+
+  const domain =
+    APP_HOST && APP_HOST.startsWith("app.") ? APP_HOST.slice("app".length) : undefined;
+
+  const supabase = createServerClient(new URL(url).origin, key, {
+    cookieOptions: { domain, sameSite: "lax", secure: process.env.NODE_ENV === "production" },
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (list) => {
+        for (const { name, value, options } of list) response.cookies.set(name, value, options);
+      },
+    },
+  });
+
+  // The call is for its side effect: a refresh when the token has lapsed.
+  await supabase.auth.getUser();
+  return response;
 }
 
 export const config = {

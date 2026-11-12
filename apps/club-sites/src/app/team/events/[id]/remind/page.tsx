@@ -4,15 +4,16 @@ import { notFound } from "next/navigation";
 
 import { FormCard } from "@/components/team/form-card";
 import { type Recipient, MessageComposer } from "@/components/team/message-composer";
+import { requireStaff } from "@/lib/auth";
 import {
+  getActiveRoster,
   getAvailability,
   getCurrentSeason,
   getEvent,
-  getRoster,
 } from "@/lib/data/team";
 import { formatReminderDate } from "@/lib/format";
+import { textablePersonIds } from "@/lib/reminders";
 import { teamBase } from "@/lib/team-path";
-import { requireCaptain } from "@/lib/team-session";
 
 export const metadata: Metadata = { title: "Send Reminder" };
 
@@ -30,11 +31,11 @@ async function siteOrigin() {
 }
 
 export default async function RemindPage(props: PageProps<"/team/events/[id]/remind">) {
-  const session = await requireCaptain();
+  const membership = await requireStaff();
   const { id } = await props.params;
 
   const [event, season, origin, base] = await Promise.all([
-    getEvent(id, session.teamId),
+    getEvent(id, membership.teamId),
     getCurrentSeason(),
     siteOrigin(),
     teamBase(),
@@ -42,8 +43,11 @@ export default async function RemindPage(props: PageProps<"/team/events/[id]/rem
   if (!event) notFound();
 
   const [roster, availability] = await Promise.all([
-    season ? getRoster(season.id, session.teamId) : [],
+    season ? getActiveRoster(season.id, membership.teamId) : [],
     getAvailability([event.id]),
+  ]);
+  const [textable] = await Promise.all([
+    textablePersonIds(membership.teamId, roster.map((member) => member.personId)),
   ]);
   const statusOf = new Map(
     (availability.get(event.id) ?? []).map((response) => [response.rosterId, response.status]),
@@ -53,7 +57,7 @@ export default async function RemindPage(props: PageProps<"/team/events/[id]/rem
     rosterId: member.rosterId,
     name: member.name,
     number: member.number,
-    hasPhone: Boolean(member.phone),
+    hasPhone: textable.has(member.personId),
     status: statusOf.get(member.rosterId) ?? null,
   }));
 
@@ -62,7 +66,7 @@ export default async function RemindPage(props: PageProps<"/team/events/[id]/rem
 
   return (
     <FormCard title="Send Reminder" cancelHref={back}>
-      <MessageComposer recipients={recipients} template={template} backHref={back} />
+      <MessageComposer eventId={event.id} recipients={recipients} template={template} backHref={back} />
     </FormCard>
   );
 }

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { continueSeason } from "@/app/team/actions";
+import { AdminForm } from "@/components/admin/admin-form";
 import { type ScheduleGroup, EventList } from "@/components/team/event-list";
+import { canRespond, isStaff, requireMember } from "@/lib/auth";
 import {
   getAvailability,
   getCurrentSeason,
@@ -10,23 +13,23 @@ import {
 } from "@/lib/data/team";
 import { formatTime } from "@/lib/format";
 import { teamBase } from "@/lib/team-path";
-import { requireTeamSession } from "@/lib/team-session";
 
 export const metadata: Metadata = { title: "Team Schedule" };
 
-/** The app's "+" menu: three ways to add to the schedule, captains only. */
+/** The app's "+" menu: three ways to add to the schedule, staff only. */
 const ADD_LINKS = [
   { path: "/new/practice", label: "Add Practice" },
   { path: "/new/practices", label: "Add Repeating Practices" },
   { path: "/new/game", label: "Add Game" },
 ];
 
-export default async function TeamSchedulePage() {
-  const session = await requireTeamSession();
+export default async function TeamSchedulePage(props: PageProps<"/team">) {
+  const membership = await requireMember();
   const base = await teamBase();
+  const { welcome } = await props.searchParams;
 
   const season = await getCurrentSeason();
-  const events = season ? await getUpcomingEvents(season.id, session.teamId) : [];
+  const events = season ? await getUpcomingEvents(season.id, membership.teamId) : [];
   const availability = await getAvailability(events.map((event) => event.id));
 
   const groups: ScheduleGroup[] = groupByDay(events).map((group) => ({
@@ -42,18 +45,42 @@ export default async function TeamSchedulePage() {
       myStatus:
         availability
           .get(event.id)
-          ?.find((response) => response.rosterId === session.rosterId)?.status ??
+          ?.find((response) => response.rosterId === membership.rosterId)?.status ??
         null,
     })),
   }));
 
+  // A player from an earlier season, not yet on this one's roster.
+  const askAboutSeason =
+    season !== null &&
+    membership.rosterId === null &&
+    membership.status === "active" &&
+    (membership.role === "player" || membership.role === "captain");
+
   return (
     <div className="container-page py-8 sm:py-10">
       <div className="rounded-xl bg-background p-4 text-foreground sm:p-6">
+        {welcome === "back" && (
+          <p className="mb-4 rounded-lg bg-surface px-4 py-3 text-sm">
+            Welcome back, {membership.personName.split(" ")[0]}. Your roster spot is linked to this sign-in.
+          </p>
+        )}
+
+        {askAboutSeason && (
+          <div className="mb-4 rounded-lg bg-surface px-4 py-3 text-sm">
+            <p className="font-medium">Are you playing the {season.year} season?</p>
+            <p className="mt-1 text-muted">
+              Say yes and you&rsquo;re back on the roster with last season&rsquo;s details.
+              Otherwise you can keep following the schedule.
+            </p>
+            <AdminForm action={continueSeason} submitLabel="Yes, I'm playing" className="mt-1" />
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-3">
           <h1 className="headline text-xl sm:text-2xl">Schedule</h1>
 
-          {session.captain && (
+          {isStaff(membership) && (
             // A native disclosure: no script, closes on navigation.
             <details className="relative">
               <summary
@@ -87,7 +114,12 @@ export default async function TeamSchedulePage() {
           </div>
         ) : (
           <div className="mt-4">
-            <EventList groups={groups} captain={session.captain} base={base} />
+            <EventList
+              groups={groups}
+              canRespond={canRespond(membership)}
+              staff={isStaff(membership)}
+              base={base}
+            />
           </div>
         )}
       </div>

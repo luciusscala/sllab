@@ -11,9 +11,8 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
 
-/** Phones are stored as bare digits; ten of them is a US number without its +1. */
-const toE164 = (digits: string) =>
-  `+${digits.length === 10 ? `1${digits}` : digits}`;
+/** Numbers are stored as digits with the country code; E.164 is that with a plus. */
+const toE164 = (digits: string) => `+${digits}`;
 
 /** Throws with Twilio's own explanation when the message is refused. */
 export async function sendSms(phone: string, body: string) {

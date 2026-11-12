@@ -1,3 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import type { Role, Status } from "@/lib/roles";
 import type { AvailabilityStatus } from "@/lib/data/availability";
 import { compareNumbers } from "@/lib/data/roster";
 import {
@@ -11,30 +14,26 @@ import {
 import type { EventType } from "@/lib/data/events";
 import { dayKey, formatDayHeading } from "@/lib/format";
 import { logoUrl, one } from "@/lib/supabase";
-import { requireAdminClient } from "@/lib/supabase-admin";
+import { supabaseUser } from "@/lib/supabase-server";
 import "server-only";
 
 /**
  * Reads for the team section — the web port of the iOS app's `DataService`.
  *
- * Uses the secret-key client because `availability` and the practice, social
- * and tournament tables have no public read policy, and because every page
- * here sits behind `requireTeamSession()` anyway. Nothing in this file is
- * cached: availability changes by the minute and the pages are per-player.
+ * Everything here runs as the signed-in person, under row-level security:
+ * a guest gets the events and responses their membership allows, a coach
+ * their team's and nobody else's. The `teamId` filters narrow the result to
+ * the team being viewed; the database decides what's visible at all.
+ * Nothing in this file is cached: availability changes by the minute and
+ * the pages are per-person.
  *
  * Where the app fetches one subtype and one availability list per event, the
  * site fetches each table once for the whole schedule.
- *
- * Every read takes the session's team id, as the app's `currentTeamId` does:
- * roster and events rows belong to a team, and a game reads as home or away
- * depending on whose side it's seen from.
  */
 
 export type { AvailabilityStatus } from "@/lib/data/availability";
 
 export type Season = { id: string; year: number };
-
-export type TeamSummary = { id: string; name: string };
 
 /** One roster row with its person, as the app's `RosterEntry` + `Person`. */
 export type Member = {
@@ -43,7 +42,6 @@ export type Member = {
   name: string;
   number: number | null;
   hometown: string | null;
-  phone: string | null;
 };
 
 /** One `availability` row, with the member it belongs to resolved. */
@@ -72,12 +70,12 @@ export type TeamEvent = {
   game: { opponentId: string; fieldId: string | null; isHome: boolean } | null;
 };
 
-const client = () => requireAdminClient();
+const client = () => supabaseUser();
 
-// MARK: Season, team, roster
+// MARK: Season and roster
 
 export async function getCurrentSeason(): Promise<Season | null> {
-  const { data, error } = await client()
+  const { data, error } = await (await client())
     .from("seasons")
     .select("id, year")
     .eq("is_current", true)
@@ -87,35 +85,6 @@ export async function getCurrentSeason(): Promise<Season | null> {
   return (data?.[0] as Season | undefined) ?? null;
 }
 
-/**
- * Case-insensitive: the app's keyboard capitalises the code as it's typed, a
- * laptop's doesn't, and a code is a code either way. `ilike` treats `%` and
- * `_` as wildcards, so they're escaped out of the input first.
- */
-export async function getTeamByCode(code: string): Promise<TeamSummary | null> {
-  const pattern = code.replace(/[\\%_]/g, "\\$&");
-  const { data, error } = await client()
-    .from("teams")
-    .select("id, name")
-    .ilike("team_code", pattern)
-    .limit(1);
-
-  if (error) throw new Error(`Failed to look up team: ${error.message}`);
-  return (data?.[0] as TeamSummary | undefined) ?? null;
-}
-
-/** The captain code for a team, or null when the team doesn't exist. */
-export async function getAdminCode(teamId: string): Promise<string | null> {
-  const { data, error } = await client()
-    .from("teams")
-    .select("admin_code")
-    .eq("id", teamId)
-    .limit(1);
-
-  if (error) throw new Error(`Failed to load team: ${error.message}`);
-  return (data?.[0] as { admin_code: string | null } | undefined)?.admin_code ?? null;
-}
-
 type RosterRow = {
   id: string;
   number: number | null;
@@ -123,15 +92,14 @@ type RosterRow = {
     id: string;
     name: string;
     hometown: string | null;
-    phone: string | null;
   } | null;
 };
 
 /** The season's squad, by number with unnumbered players last, then by name. */
 export async function getRoster(seasonId: string, teamId: string): Promise<Member[]> {
-  const { data, error } = await client()
+  const { data, error } = await (await client())
     .from("roster")
-    .select("id, number, person:people(id, name, hometown, phone)")
+    .select("id, number, person:people(id, name, hometown)")
     .eq("season_id", seasonId)
     .eq("team_id", teamId);
 
@@ -148,7 +116,6 @@ export async function getRoster(seasonId: string, teamId: string): Promise<Membe
           name: person.name,
           number: row.number,
           hometown: person.hometown,
-          phone: person.phone,
         },
       ];
     })
@@ -156,6 +123,128 @@ export async function getRoster(seasonId: string, teamId: string): Promise<Membe
       (a, b) =>
         compareNumbers(a.number, b.number) || a.name.localeCompare(b.name),
     );
+}
+
+/**
+ * Who answers for this season: the roster, less anyone whose membership is
+ * away or gone. Status is a filter, never a response, so a player marked
+ * away drops out of the response lists and reminders rather than showing
+ * as "No Response".
+ */
+export async function getActiveRoster(seasonId: string, teamId: string): Promise<Member[]> {
+  const [roster, members] = await Promise.all([
+    getRoster(seasonId, teamId),
+    getMembers(teamId),
+  ]);
+  const active = new Set(
+    members.filter((m) => m.status === "active").map((m) => m.personId),
+  );
+  return roster.filter((member) => active.has(member.personId));
+}
+
+// MARK: Members
+
+/** One `memberships` row with its person, for the members page. */
+export type TeamMember = {
+  membershipId: string;
+  personId: string;
+  name: string;
+  role: Role;
+  status: Status;
+  isNew: boolean;
+  joinedAt: string;
+};
+
+type MemberRow = {
+  id: string;
+  role: Role;
+  status: Status;
+  is_new: boolean;
+  created_at: string;
+  person: { id: string; name: string } | null;
+};
+
+/** Everyone with a membership on the team, in any role or status. */
+export async function getMembers(teamId: string): Promise<TeamMember[]> {
+  const { data, error } = await (await client())
+    .from("memberships")
+    .select("id, role, status, is_new, created_at, person:people(id, name)")
+    .eq("team_id", teamId);
+
+  if (error) throw new Error(`Failed to load members: ${error.message}`);
+
+  return ((data ?? []) as unknown as MemberRow[])
+    .flatMap((row) => {
+      const person = one(row.person);
+      if (!person) return [];
+      return [
+        {
+          membershipId: row.id,
+          personId: person.id,
+          name: person.name,
+          role: row.role,
+          status: row.status,
+          isNew: row.is_new,
+          joinedAt: row.created_at,
+        },
+      ];
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export type Invite = { id: string; phone: string; role: Role; createdAt: string };
+
+/** Numbers a captain has added that haven't signed in yet. Staff only. */
+export async function getPendingInvites(teamId: string): Promise<Invite[]> {
+  const { data, error } = await (await client())
+    .from("team_invites")
+    .select("id, phone, role, created_at")
+    .eq("team_id", teamId)
+    .is("accepted_at", null)
+    .order("created_at");
+
+  if (error) throw new Error(`Failed to load invites: ${error.message}`);
+  return ((data ?? []) as { id: string; phone: string; role: Role; created_at: string }[]).map(
+    (row) => ({ id: row.id, phone: row.phone, role: row.role, createdAt: row.created_at }),
+  );
+}
+
+/**
+ * How many of the team's last `count` events each roster member answered,
+ * for the "haven't been around" list: an active player with no response to
+ * any of them has probably drifted off without saying so.
+ */
+export async function getRecentResponseCounts(
+  seasonId: string,
+  teamId: string,
+  count = 8,
+): Promise<{ events: number; byRoster: Map<string, number> }> {
+  const db = await client();
+  const { data: events, error } = await db
+    .from("events")
+    .select("id")
+    .eq("season_id", seasonId)
+    .eq("team_id", teamId)
+    .lte("event_date", new Date().toISOString())
+    .order("event_date", { ascending: false })
+    .limit(count);
+  if (error) throw new Error(`Failed to load events: ${error.message}`);
+
+  const ids = (events ?? []).map((row) => row.id as string);
+  const byRoster = new Map<string, number>();
+  if (ids.length === 0) return { events: 0, byRoster };
+
+  const { data: responses, error: responsesError } = await db
+    .from("availability")
+    .select("roster_id")
+    .in("event_id", ids);
+  if (responsesError) throw new Error(`Failed to load availability: ${responsesError.message}`);
+
+  for (const row of responses ?? []) {
+    const id = row.roster_id as string;
+    byRoster.set(id, (byRoster.get(id) ?? 0) + 1);
+  }
+  return { events: ids.length, byRoster };
 }
 
 // MARK: Events
@@ -199,13 +288,15 @@ type TournamentRow = {
  * filtered to the ids at hand, rather than one per event as the app does.
  * `teamId` is whose side a game is read from.
  */
-async function withSubtypes(rows: EventRow[], teamId: string): Promise<TeamEvent[]> {
+async function withSubtypes(
+  db: SupabaseClient,
+  rows: EventRow[],
+  teamId: string,
+): Promise<TeamEvent[]> {
   if (rows.length === 0) return [];
 
   const idsOf = (type: EventType) =>
     rows.filter((row) => row.event_type === type).map((row) => row.id);
-
-  const db = client();
 
   const query = async <T,>(
     table: string,
@@ -318,7 +409,8 @@ export async function getUpcomingEvents(
   seasonId: string,
   teamId: string,
 ): Promise<TeamEvent[]> {
-  const { data, error } = await client()
+  const db = await client();
+  const { data, error } = await db
     .from("events")
     .select("id, event_type, event_date")
     .eq("season_id", seasonId)
@@ -327,7 +419,7 @@ export async function getUpcomingEvents(
     .order("event_date");
 
   if (error) throw new Error(`Failed to load events: ${error.message}`);
-  return withSubtypes((data ?? []) as EventRow[], teamId);
+  return withSubtypes(db, (data ?? []) as EventRow[], teamId);
 }
 
 /**
@@ -339,7 +431,8 @@ export async function getEvent(
   eventId: string,
   teamId: string,
 ): Promise<TeamEvent | null> {
-  const { data, error } = await client()
+  const db = await client();
+  const { data, error } = await db
     .from("events")
     .select("id, event_type, event_date")
     .eq("id", eventId)
@@ -347,7 +440,7 @@ export async function getEvent(
     .limit(1);
 
   if (error) throw new Error(`Failed to load event: ${error.message}`);
-  const [event] = await withSubtypes((data ?? []) as EventRow[], teamId);
+  const [event] = await withSubtypes(db, (data ?? []) as EventRow[], teamId);
   return event ?? null;
 }
 
@@ -366,7 +459,7 @@ export async function getAvailability(
   const grouped = new Map<string, Response[]>();
   if (eventIds.length === 0) return grouped;
 
-  const { data, error } = await client()
+  const { data, error } = await (await client())
     .from("availability")
     .select("event_id, roster_id, status")
     .in("event_id", eventIds);

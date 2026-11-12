@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 /** Bumped whenever the terms' substance changes, so the page says when. */
-const EFFECTIVE = "October 3, 2026";
+const EFFECTIVE = "November 12, 2026";
 
 /**
  * Mostly the SMS program's terms, which carriers require to be published and
@@ -20,14 +20,14 @@ const SECTIONS: PolicySection[] = [
     heading: "The team app",
     paragraphs: [
       "The UC San Diego Men's Club Soccer team app (on iOS and at app.ucsdmcs.com) is a scheduling and availability tool for the club's players and captains. It is run by the club, not by UC San Diego.",
-      "It is for members of the club's roster. Join only as yourself, and respond to events honestly so captains can plan around who is coming.",
+      "Players, captains and coaches sign in with their own phone number; guests may follow the schedule with the team code alone. Join only as yourself, and respond to events honestly so captains can plan around who is coming. Captains review everyone who joins with the code and may remove anyone who shouldn't be there.",
     ],
   },
   {
     heading: "SMS reminders",
     paragraphs: [
       "UCSD Men's Club Soccer Reminders are text messages about upcoming practices, games, tournaments and team events, sent by team captains to roster members who have opted in.",
-      "You opt in by entering your phone number in the team app and ticking the box to receive text reminders. It is optional, and everything else in the app works without it.",
+      "Signing in sends you a one-time code by text. Reminders are separate: you opt in to those by ticking the box when you join, and everything else in the app works without them.",
       "Message frequency varies with the schedule, usually a few messages a week during the season.",
       "Message and data rates may apply. The club never charges for messages.",
     ],
@@ -36,7 +36,7 @@ const SECTIONS: PolicySection[] = [
     heading: "Opting out and getting help",
     paragraphs: [
       "Reply STOP to any message to stop receiving reminders. You will get one message confirming it, and no more after that. Reply START to opt back in.",
-      "You can also remove your phone number in the web app's Settings at any time.",
+      "Deleting your account in Settings removes your phone number entirely.",
       "Reply HELP to any message for help, or email the club at the address below.",
       "Carriers are not liable for delayed or undelivered messages.",
     ],

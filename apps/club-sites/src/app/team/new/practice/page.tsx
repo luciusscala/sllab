@@ -6,12 +6,12 @@ import { PracticeFields } from "@/components/team/event-fields";
 import { FormCard } from "@/components/team/form-card";
 import { listFields } from "@/lib/data/admin";
 import { teamBase } from "@/lib/team-path";
-import { requireCaptain } from "@/lib/team-session";
+import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Add Practice" };
 
 export default async function NewPracticePage() {
-  await requireCaptain();
+  await requireStaff();
   const fields = await listFields();
 
   return (

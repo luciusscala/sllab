@@ -24,10 +24,12 @@ const QUICK =
  * non-responders checked, since chasing them is what the screen is for.
  */
 export function MessageComposer({
+  eventId,
   recipients,
   template,
   backHref,
 }: {
+  eventId: string;
   recipients: Recipient[];
   template: string;
   backHref: string;
@@ -71,6 +73,7 @@ export function MessageComposer({
 
   return (
     <form action={formAction}>
+      <input type="hidden" name="event_id" value={eventId} />
       <label className="field-label" htmlFor="message">
         Message
       </label>

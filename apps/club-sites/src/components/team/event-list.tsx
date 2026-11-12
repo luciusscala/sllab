@@ -18,16 +18,21 @@ const BAR_BUTTON =
 /**
  * The app's schedule list with its selection mode. Normally every row is a
  * link to the event; "Select" turns the rows into checkboxes and raises a bar
- * with Going, Not Going and, for captains, Delete. The whole list is one form,
- * so the bar's buttons submit whichever rows are checked.
+ * with Going, Not Going for players and Delete for staff. The whole list is
+ * one form, so the bar's buttons submit whichever rows are checked. Someone
+ * who can do neither (a guest) has no selection mode at all.
  */
 export function EventList({
   groups,
-  captain,
+  canRespond,
+  staff,
   base,
 }: {
   groups: ScheduleGroup[];
-  captain: boolean;
+  /** An active player: the Going / Not Going buttons. */
+  canRespond: boolean;
+  /** A captain or coach: the Delete button. */
+  staff: boolean;
   /** Link prefix for this host, from `teamBase()`. */
   base: string;
 }) {
@@ -61,6 +66,32 @@ export function EventList({
     },
     null,
   );
+
+  if (!canRespond && !staff) {
+    return (
+      <>
+        {groups.map((group) => (
+          <section key={group.key} className="mt-5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+              {group.heading}
+            </h2>
+            <ul className="mt-2 divide-y divide-border border border-border">
+              {group.items.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`${base}/events/${item.id}`}
+                    className="flex items-center px-3 py-3 transition hover:bg-surface active:bg-border"
+                  >
+                    <EventRow item={item} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </>
+    );
+  }
 
   return (
     <form action={formAction}>
@@ -139,25 +170,29 @@ export function EventList({
       {selecting && selected.size > 0 && (
         <div className="sticky bottom-20 z-10 mt-6 flex justify-center md:bottom-4">
           <div className="flex items-center overflow-hidden rounded-full border border-border bg-background shadow-lg">
-            <button
-              type="submit"
-              name="intent"
-              value="yes"
-              disabled={pending}
-              className={`${BAR_BUTTON} text-going`}
-            >
-              ✓ Going
-            </button>
-            <button
-              type="submit"
-              name="intent"
-              value="no"
-              disabled={pending}
-              className={`${BAR_BUTTON} text-not-going`}
-            >
-              ✕ Not Going
-            </button>
-            {captain && (
+            {canRespond && (
+              <>
+                <button
+                  type="submit"
+                  name="intent"
+                  value="yes"
+                  disabled={pending}
+                  className={`${BAR_BUTTON} text-going`}
+                >
+                  ✓ Going
+                </button>
+                <button
+                  type="submit"
+                  name="intent"
+                  value="no"
+                  disabled={pending}
+                  className={`${BAR_BUTTON} text-not-going`}
+                >
+                  ✕ Not Going
+                </button>
+              </>
+            )}
+            {staff && (
               <button
                 type="submit"
                 name="intent"
@@ -173,7 +208,7 @@ export function EventList({
                     event.preventDefault();
                   }
                 }}
-                className={`${BAR_BUTTON} border-l border-border text-red-700`}
+                className={`${BAR_BUTTON} ${canRespond ? "border-l border-border" : ""} text-red-700`}
               >
                 Delete
               </button>

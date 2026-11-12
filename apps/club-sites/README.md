@@ -16,11 +16,19 @@ It's part of [SLLAB](../../README.md). It's built with Next.js 16, React 19 and 
 - **Tryouts**: dates, times, location, what to bring, and the registration form with a QR code.
 - **Club information**: the club's description, accolades and officers on the home page, a support page, and the privacy policy and terms the App Store requires. Contact, FAQ and donation pages are placeholders for now.
 
-**The team app** (`/team`, or `app.ucsdmcs.com`). Everything Fixture does on iOS, on the web: joining, the schedule, availability, and for captains, creating events and sending SMS reminders.
+**The team app** (`/team`, or `app.ucsdmcs.com`). Everything Fixture does on iOS, on the web: joining, the schedule, availability, and for captains and coaches, creating events, managing members and sending SMS reminders.
 
-**The admin dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Public pages are cached until the dashboard changes something, so most visits never touch the database.
+**The admin dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Open to the club team's captains and coaches, with the same sign-in as the team app. Public pages are cached until the dashboard changes something, so most visits never touch the database.
 
-**The iOS app's API** (`/api`). Captain unlock and SMS reminders for Fixture, plus the universal-link file at `/.well-known/apple-app-site-association`.
+**The iOS app's API** (`/api`). SMS reminders for Fixture, plus the universal-link file at `/.well-known/apple-app-site-association`.
+
+## Accounts
+
+People sign in with their phone number (Supabase Auth texts a code), or as guests with only the team code. Each person has one membership per team with a role — guest, player, captain or coach — and a status. The roles and what each may do are set out in [`supabase/README.md`](../../supabase/README.md).
+
+On the web the session lives in Supabase's auth cookies, shared between the club site and the app subdomain when `APP_HOST` is set. Pages and Server Actions read it through `src/lib/auth.ts` (`requireMember`, `requireStaff`, `requireCaptain`, `requireAdmin`) and query the database as the signed-in person, so row-level security decides what they see; the guards only turn a refusal into a redirect. The admin dashboard is the exception: it writes with the secret key, behind `requireAdmin()`, because it edits tables (opponent teams, fields) that no policy opens.
+
+Phone numbers never reach the browser. Reminders name players by roster id; `src/lib/reminders.ts` looks the numbers up on the server, texts only active members who ticked the box, and caps a team at ten reminders a day.
 
 ## Requirements
 
@@ -42,7 +50,7 @@ The site builds without a `.env.local`; pages that need data render empty instea
 src/
 ├── app/          Pages and routes: admin/ the dashboard, team/ the team app, api/ the iOS app's endpoints
 ├── components/   UI pieces; admin/ and team/ hold section-specific ones
-├── lib/          Supabase and Twilio clients, sessions, formatting; data/ holds all data access
+├── lib/          Supabase clients (per-person and admin), auth, Twilio, formatting; data/ holds all data access
 └── proxy.ts      Serves the team app from the app. subdomain
 public/           Static images and logos
 ```

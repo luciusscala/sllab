@@ -1,122 +1,133 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import {
-  disableCaptain,
-  leaveTeamConfirmed,
-  unlockCaptain,
-  updateProfile,
-} from "@/app/team/actions";
+import { deleteAccount, signOut } from "@/app/auth/actions";
+import { leaveTeam, updateProfile } from "@/app/team/actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { SectionHeading } from "@/components/section-heading";
+import { ROLE_LABEL, STATUS_LABEL, adminMembership, getViewer, requireMember } from "@/lib/auth";
 import { getCurrentSeason, getRoster } from "@/lib/data/team";
-import { requireTeamSession } from "@/lib/team-session";
 
 export const metadata: Metadata = { title: "Team Settings" };
 
-export default async function TeamSettingsPage() {
-  const session = await requireTeamSession();
+/** "(415) 555-0100" from the stored digits, for showing a person their own number. */
+const formatPhone = (digits: string) =>
+  digits.length === 11 && digits.startsWith("1")
+    ? `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
+    : `+${digits}`;
 
-  const season = await getCurrentSeason();
+export default async function TeamSettingsPage() {
+  const membership = await requireMember();
+  const [{ phone }, admin, season] = await Promise.all([
+    getViewer(),
+    adminMembership(),
+    getCurrentSeason(),
+  ]);
+
   const me = season
-    ? (await getRoster(season.id, session.teamId)).find((member) => member.rosterId === session.rosterId)
+    ? (await getRoster(season.id, membership.teamId)).find(
+        (member) => member.rosterId === membership.rosterId,
+      )
     : undefined;
+  const guest = membership.role === "guest";
 
   return (
     <div className="container-page py-8 sm:py-10">
       <div className="rounded-xl bg-background p-4 text-foreground sm:p-6">
         <h1 className="headline text-xl sm:text-2xl">Settings</h1>
 
-        {me && (
-          <>
-            <SectionHeading>Profile</SectionHeading>
-            <dl className="mt-3 divide-y divide-border text-sm">
-              <div className="flex justify-between py-2.5">
-                <dt className="text-muted">Name</dt>
-                <dd>{me.name}</dd>
-              </div>
-              {me.number !== null && (
-                <div className="flex justify-between py-2.5">
-                  <dt className="text-muted">Number</dt>
-                  <dd>#{me.number}</dd>
-                </div>
-              )}
-            </dl>
-
-            <AdminForm action={updateProfile} submitLabel="Save Changes" className="mt-2">
-              <label className="field-label" htmlFor="hometown">
-                Hometown
-              </label>
-              <input
-                id="hometown"
-                name="hometown"
-                defaultValue={me.hometown ?? ""}
-                placeholder="Add hometown"
-                className="field"
-              />
-
-              <label className="field-label mt-4" htmlFor="phone">
-                Phone <span className="font-normal text-muted">(optional)</span>
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                defaultValue={me.phone ?? ""}
-                placeholder="Add a number for reminders"
-                className="field tabular-nums"
-              />
-              <p className="mt-2 text-xs text-muted">
-                Only captains see it, and only to text the team about practices
-                and games. Clear the field to stop receiving them.
-              </p>
-            </AdminForm>
-          </>
-        )}
-
-        <SectionHeading>Admin Access</SectionHeading>
-        {session.captain ? (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p className="flex items-center gap-2">
-              <span aria-hidden className="text-going">
-                ✓
-              </span>
-              Admin Mode Active
-            </p>
-            <form action={disableCaptain}>
-              <button type="submit" className="text-blue underline underline-offset-4">
-                Disable Admin Mode
-              </button>
-            </form>
+        <SectionHeading>Profile</SectionHeading>
+        <dl className="mt-3 divide-y divide-border text-sm">
+          <div className="flex justify-between py-2.5">
+            <dt className="text-muted">Team</dt>
+            <dd>{membership.teamName}</dd>
           </div>
-        ) : (
-          <AdminForm action={unlockCaptain} submitLabel="Unlock Admin" className="mt-3">
-            <label className="field-label" htmlFor="admin_code">
-              Admin code
+          {!guest && (
+            <div className="flex justify-between py-2.5">
+              <dt className="text-muted">Name</dt>
+              <dd>{membership.personName}</dd>
+            </div>
+          )}
+          <div className="flex justify-between py-2.5">
+            <dt className="text-muted">Role</dt>
+            <dd>
+              {ROLE_LABEL[membership.role]}
+              {membership.status !== "active" && (
+                <span className="ml-2 text-muted">({STATUS_LABEL[membership.status]})</span>
+              )}
+            </dd>
+          </div>
+          {me?.number !== null && me?.number !== undefined && (
+            <div className="flex justify-between py-2.5">
+              <dt className="text-muted">Number</dt>
+              <dd>#{me.number}</dd>
+            </div>
+          )}
+          {phone && (
+            <div className="flex justify-between py-2.5">
+              <dt className="text-muted">Phone</dt>
+              <dd className="tabular-nums">{formatPhone(phone)}</dd>
+            </div>
+          )}
+        </dl>
+
+        {!guest && (
+          <AdminForm action={updateProfile} submitLabel="Save Changes" className="mt-2">
+            <label className="field-label" htmlFor="hometown">
+              Hometown
             </label>
             <input
-              id="admin_code"
-              name="admin_code"
-              type="password"
-              required
-              autoComplete="off"
-              autoCapitalize="none"
+              id="hometown"
+              name="hometown"
+              defaultValue={me?.hometown ?? ""}
+              placeholder="Add hometown"
               className="field"
             />
           </AdminForm>
         )}
 
+        {admin && (
+          <>
+            <SectionHeading>Club</SectionHeading>
+            <p className="mt-3 text-sm">
+              <Link href="/admin" className="text-blue underline underline-offset-4">
+                Open the admin dashboard
+              </Link>
+              <span className="ml-2 text-muted">— rosters, results, fields and opponents.</span>
+            </p>
+          </>
+        )}
+
         <SectionHeading>Account</SectionHeading>
-        <div className="mt-3">
+        <div className="mt-3 space-y-4">
           <AdminForm
-            action={leaveTeamConfirmed}
+            action={leaveTeam}
             submitLabel="Leave Team"
             destructive
-            confirm="Leave the team on this device? You can rejoin with the team code."
+            confirm={`Leave ${membership.teamName}? Your name stays on past rosters, and you can rejoin with the team code.`}
           >
             <p className="mb-3 text-sm text-muted">
-              Forgets your team and name in this browser. Nothing on the roster changes.
+              You&rsquo;ll stop seeing the schedule and won&rsquo;t be asked about events.
+            </p>
+          </AdminForm>
+
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="rounded-md border border-border-strong px-4 py-2 text-sm font-semibold transition hover:bg-surface"
+            >
+              Sign out
+            </button>
+          </form>
+
+          <AdminForm
+            action={deleteAccount}
+            submitLabel="Delete Account"
+            destructive
+            confirm="Delete your account? Your sign-in and phone number are removed. Your name stays on the seasons you played. This cannot be undone."
+          >
+            <p className="mb-3 text-sm text-muted">
+              Removes your sign-in and phone number from every team. Past rosters keep your name.
             </p>
           </AdminForm>
         </div>

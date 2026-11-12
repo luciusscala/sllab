@@ -1,23 +1,20 @@
 import { TabBar } from "@/components/team/tab-bar";
+import { currentMembership, isStaff } from "@/lib/auth";
 import { teamBase } from "@/lib/team-path";
-import { isComplete, readTeamSession } from "@/lib/team-session";
 
 /**
- * Tabs appear once onboarding is done, as the app's `MainTabView` does.
+ * Tabs appear once someone is on a team, as the app's `MainTabView` does.
  * Convenience only — every page and action guards itself with
- * `requireTeamSession()`.
+ * `requireMember()`, and the database with its policies.
  */
 export default async function TeamLayout({ children }: LayoutProps<"/team">) {
-  const [member, base] = await Promise.all([
-    readTeamSession().then(isComplete),
-    teamBase(),
-  ]);
+  const [membership, base] = await Promise.all([currentMembership(), teamBase()]);
 
   return (
     <>
-      {member && <TabBar base={base} />}
+      {membership && <TabBar base={base} staff={isStaff(membership)} />}
       {/* Room for the fixed bar on phones, so the last row isn't under it. */}
-      <div className={member ? "pb-20 md:pb-0" : ""}>{children}</div>
+      <div className={membership ? "pb-20 md:pb-0" : ""}>{children}</div>
     </>
   );
 }

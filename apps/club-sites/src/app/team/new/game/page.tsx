@@ -6,15 +6,15 @@ import { GameFields } from "@/components/team/event-fields";
 import { FormCard } from "@/components/team/form-card";
 import { listFields, listOpponents } from "@/lib/data/admin";
 import { teamBase } from "@/lib/team-path";
-import { requireCaptain } from "@/lib/team-session";
+import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Add Game" };
 
 export default async function NewGamePage() {
-  const session = await requireCaptain();
+  const membership = await requireStaff();
   const [fields, teams] = await Promise.all([
     listFields(),
-    listOpponents(session.teamId),
+    listOpponents(membership.teamId),
   ]);
 
   return (

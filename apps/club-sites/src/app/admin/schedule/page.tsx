@@ -4,7 +4,7 @@ import { createGame, deleteGame, updateGame } from "@/app/admin/actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { SeasonPicker } from "@/components/season-picker";
 import { SetupNotice } from "@/components/admin/setup-notice";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/auth";
 import { CLUB_TEAM_ID } from "@/lib/club";
 import { adminSeason, listFields, listGames, listOpponents } from "@/lib/data/admin";
 import { isAdminConfigured } from "@/lib/supabase-admin";

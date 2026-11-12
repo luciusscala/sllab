@@ -9,7 +9,7 @@ import { listFields, listOpponents } from "@/lib/data/admin";
 import { getEvent } from "@/lib/data/team";
 import { toDateTimeLocal } from "@/lib/format";
 import { teamBase } from "@/lib/team-path";
-import { requireCaptain } from "@/lib/team-session";
+import { requireStaff } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Edit Event" };
 
@@ -18,10 +18,10 @@ export const metadata: Metadata = { title: "Edit Event" };
 export default async function EditEventPage(
   props: PageProps<"/team/events/[id]/edit">,
 ) {
-  const session = await requireCaptain();
+  const membership = await requireStaff();
   const { id } = await props.params;
 
-  const event = await getEvent(id, session.teamId);
+  const event = await getEvent(id, membership.teamId);
   if (!event) notFound();
 
   const back = `${await teamBase()}/events/${event.id}`;
@@ -47,7 +47,7 @@ export default async function EditEventPage(
   }
 
   if (event.type === "game") {
-    const [fields, teams] = await Promise.all([listFields(), listOpponents(session.teamId)]);
+    const [fields, teams] = await Promise.all([listFields(), listOpponents(membership.teamId)]);
     return (
       <FormCard title="Edit Game" cancelHref={back}>
         <AdminForm action={updateGame} submitLabel="Save">

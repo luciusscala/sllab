@@ -2,164 +2,173 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { ActionState } from "@/app/auth/actions";
+import { type Membership, canRespond, getViewer, rememberTeam, requireCaptain, requireMember, requireStaff, toMembership } from "@/lib/auth";
 import { EVENT_TYPE } from "@/lib/data/events";
 import {
-  TABLE_FOR,
   deleteWithEvent,
   insertWithEvent,
   revalidatePublic,
   updateWithEvent,
 } from "@/lib/data/events-write";
 import { type AvailabilityStatus, isStatus } from "@/lib/data/availability";
-import {
-  getCurrentSeason,
-  getEvent,
-  getRoster,
-  getTeamByCode,
-} from "@/lib/data/team";
+import { getCurrentSeason, getEvent } from "@/lib/data/team";
 import { sidesFor } from "@/lib/data/schedule";
 import { fromDateTimeLocal } from "@/lib/format";
+import { PENDING, clearPending, readPending, setPending } from "@/lib/pending";
 import { deliverReminder } from "@/lib/reminders";
-import { requireAdminClient } from "@/lib/supabase-admin";
+import { supabaseUser } from "@/lib/supabase-server";
 import { teamRedirect } from "@/lib/team-path";
-import {
-  clearTeamSession,
-  isAdminCode,
-  readTeamSession,
-  requireCaptain,
-  requireTeamSession,
-  writeTeamSession,
-} from "@/lib/team-session";
 
-/** Same shape as the admin actions, so `AdminForm` serves both sections. */
-export type ActionState = { error?: string } | null;
+export type { ActionState } from "@/app/auth/actions";
 
 const text = (data: FormData, key: string) => {
   const value = data.get(key);
   return typeof value === "string" && value.trim() ? value.trim() : null;
 };
 
-/**
- * A phone field as digits, the way the app stores it, or "" when it was left
- * blank. Ten digits is a US number without the country code; eleven starting
- * with 1 is the same number with it.
- */
-const digits = (data: FormData) => (text(data, "phone") ?? "").replace(/\D/g, "");
-
-/** The complaint about a number that was typed but isn't one. Blank is fine. */
-const badPhone = (phone: string) =>
-  phone && phone.length < 10 ? "Enter a 10-digit phone number." : null;
-
-/** The caller's own row in `people`, which is where a profile edit lands. */
-async function findMe(rosterId: string, teamId: string) {
-  const season = await getCurrentSeason();
-  if (!season) return undefined;
-  return (await getRoster(season.id, teamId)).find((entry) => entry.rosterId === rosterId);
-}
+const int = (data: FormData, key: string) => {
+  const value = text(data, key);
+  if (value === null) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+};
 
 /** Every page under /team, in one call. Writes here are small enough that
  *  refreshing the whole section beats tracking which page shows what. */
 const revalidateTeam = () => revalidatePath("/team", "layout");
 
-// MARK: Onboarding — the app's TeamSelection → RosterSelection → PhoneNumberEntry
+/** The database's error names, in words a person can act on. */
+const explain = (message: string) => {
+  if (message.includes("invalid_code")) return "That team code isn't right. Check it with your captain.";
+  if (message.includes("phone_in_use")) return "That roster spot is already linked to another account.";
+  if (message.includes("no_current_season")) return "There's no current season yet. Ask a captain to set one.";
+  if (message.includes("last_captain")) return "The team needs at least one captain.";
+  if (message.includes("not_allowed")) return "You can't do that for this member.";
+  return message;
+};
 
-export async function joinTeam(_state: ActionState, data: FormData) {
+// MARK: Joining
+
+/** The first screen: a code names a team. Nothing is joined yet. */
+export async function lookupTeam(_state: ActionState, data: FormData): Promise<ActionState> {
   const code = text(data, "team_code");
   if (!code) return { error: "Enter your team code." };
 
-  const team = await getTeamByCode(code);
-  if (!team) return { error: "Invalid team code. Please try again." };
+  const { data: teams, error } = await (await supabaseUser()).rpc("lookup_team", { p_code: code });
+  if (error) return { error: error.message };
+  if (!teams?.length) return { error: "That team code isn't right. Check it with your captain." };
 
-  await writeTeamSession({
-    teamId: team.id,
-    rosterId: null,
-    phoneEntered: false,
-    captain: false,
-  });
-  return teamRedirect("/join/roster");
+  await setPending(PENDING.code, code);
+
+  // Already signed in: no need to ask who they are again.
+  const { userId } = await getViewer();
+  return teamRedirect(userId ? "/join/finish" : "/join/who");
 }
 
+type JoinRow = {
+  needs_profile: boolean;
+  linked: boolean;
+  membership: Parameters<typeof toMembership>[0] | null;
+};
+
 /**
- * A tap on a name is the whole step. The list is server-rendered from the
- * roster, so an id that doesn't match can only be a forged request; it just
- * lands back on the list.
+ * `join_team` with whatever the flow has: the code alone first, and again
+ * with the profile when the database asks for one. Returns where to go next.
  */
-export async function selectRoster(data: FormData) {
-  const session = await readTeamSession();
-  if (!session) return teamRedirect("/join");
+async function joinWithCode(profile?: {
+  name: string;
+  position: string | null;
+  class: string | null;
+  number: number | null;
+  smsConsent: boolean;
+}): Promise<ActionState> {
+  const code = await readPending(PENDING.code);
+  if (!code) return teamRedirect("/join");
 
-  const rosterId = text(data, "roster_id");
-  const season = await getCurrentSeason();
-  const member = season
-    ? (await getRoster(season.id, session.teamId)).find((entry) => entry.rosterId === rosterId)
-    : undefined;
-  if (!member) return teamRedirect("/join/roster");
+  const { data, error } = await (await supabaseUser()).rpc("join_team", {
+    p_code: code,
+    p_name: profile?.name ?? null,
+    p_position: profile?.position ?? null,
+    p_class: profile?.class ?? null,
+    p_number: profile?.number ?? null,
+    p_sms_consent: profile?.smsConsent ?? false,
+  });
+  if (error) return { error: explain(error.message) };
 
-  // A player who already gave the app their number isn't asked twice.
-  const phoneEntered = Boolean(member.phone);
+  const row = (data as JoinRow[] | null)?.[0];
+  if (!row) return { error: "Something went wrong joining the team." };
+  if (row.needs_profile) return teamRedirect("/join/profile");
 
-  await writeTeamSession({ ...session, rosterId: member.rosterId, phoneEntered });
-  return teamRedirect(phoneEntered ? "" : "/join/phone");
+  const membership = toMembership(row.membership!);
+  await rememberTeam(membership.teamId);
+  await clearPending();
+  revalidateTeam();
+  return teamRedirect(row.linked ? "?welcome=back" : "");
 }
 
-/**
-  * The number is optional. Leaving the field blank — or tapping Skip, which
-  * posts nothing at all — finishes onboarding with no number on file; the
-  * player simply won't be in a captain's reminder. `phoneEntered` records
-  * that the step is behind them, not that a number exists, and Settings is
-  * where one gets added later.
-  */
-export async function savePhone(_state: ActionState, data: FormData) {
-  const session = await readTeamSession();
-  if (!session?.rosterId) return teamRedirect("/join");
+/** After sign-in, with a code waiting. */
+export async function finishJoin(): Promise<ActionState> {
+  return joinWithCode();
+}
 
-  const phone = digits(data);
-  const complaint = badPhone(phone);
-  if (complaint) return { error: complaint };
+/** The new-player screen: name, position, class, number, and the SMS tick. */
+export async function completeProfile(_state: ActionState, data: FormData): Promise<ActionState> {
+  const name = text(data, "name");
+  if (!name) return { error: "Enter your name." };
 
-  // A number is only kept with the box ticked: that tick is the SMS opt-in.
-  if (phone && data.get("sms_consent") !== "on") {
-    return { error: "Tick the box to get text reminders, or leave the number blank." };
+  return joinWithCode({
+    name,
+    position: text(data, "position"),
+    class: text(data, "class"),
+    number: int(data, "number"),
+    smsConsent: data.get("sms_consent") === "on",
+  });
+}
+
+/** Someone on several teams picking which to look at. */
+export async function switchTeam(data: FormData) {
+  const teamId = text(data, "team_id");
+  const { memberships } = await getViewer();
+  if (teamId && memberships.some((m) => m.teamId === teamId && m.status !== "inactive")) {
+    await rememberTeam(teamId);
   }
-
-  if (phone) {
-    const member = await findMe(session.rosterId, session.teamId);
-    if (!member) return { error: "Your roster entry could not be found." };
-
-    const { error } = await requireAdminClient()
-      .from("people")
-      .update({ phone })
-      .eq("id", member.personId);
-    if (error) return { error: error.message };
-  }
-
-  await writeTeamSession({ ...session, phoneEntered: true });
   return teamRedirect("");
 }
 
-/** The "Skip" button under the phone form: the same, with nothing typed. */
-export async function skipPhone() {
-  const session = await readTeamSession();
-  if (!session?.rosterId) return teamRedirect("/join");
-
-  await writeTeamSession({ ...session, phoneEntered: true });
-  return teamRedirect("");
+/** "Are you playing this season?" — Yes. */
+export async function continueSeason(): Promise<ActionState> {
+  const membership = await requireMember();
+  const { error } = await (await supabaseUser()).rpc("continue_season", {
+    p_team_id: membership.teamId,
+  });
+  if (error) return { error: explain(error.message) };
+  revalidateTeam();
+  return null;
 }
 
 // MARK: Availability
+
+/** The member's own roster row, which is the only one they may answer for. */
+function ownRoster(membership: Membership) {
+  if (!canRespond(membership)) {
+    throw new Error("Only active players can respond to events.");
+  }
+  return membership.rosterId!;
+}
 
 /**
  * Called straight from the picker rather than through a form, so the client
  * can show the tap immediately and settle it afterwards.
  */
 export async function setAvailability(eventId: string, status: AvailabilityStatus) {
-  const session = await requireTeamSession();
+  const membership = await requireMember();
   if (!isStatus(status)) return;
 
-  const { error } = await requireAdminClient()
+  const { error } = await (await supabaseUser())
     .from("availability")
     .upsert(
-      { event_id: eventId, roster_id: session.rosterId, status },
+      { event_id: eventId, roster_id: ownRoster(membership), status },
       { onConflict: "event_id,roster_id" },
     );
   if (error) throw new Error(error.message);
@@ -169,10 +178,11 @@ export async function setAvailability(eventId: string, status: AvailabilityStatu
 
 /**
  * The selection bar's one action. `intent` is the button that submitted:
- * "yes" or "no" marks every checked event, "delete" removes them (captains).
+ * "yes" or "no" marks every checked event, "delete" removes them (staff).
  */
-export async function bulkAction(_state: ActionState, data: FormData) {
-  const session = await requireTeamSession();
+export async function bulkAction(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireMember();
+  const supabase = await supabaseUser();
 
   const eventIds = data
     .getAll("event_id")
@@ -182,28 +192,27 @@ export async function bulkAction(_state: ActionState, data: FormData) {
   const intent = text(data, "intent");
 
   if (intent === "delete") {
-    if (!session.captain) return { error: "Only captains can delete events." };
-
+    await requireStaff();
     for (const eventId of eventIds) {
-      const event = await getEvent(eventId, session.teamId);
+      const event = await getEvent(eventId, membership.teamId);
       if (!event) continue;
-      const error = await deleteWithEvent(TABLE_FOR[event.type], eventId);
+      const error = await deleteWithEvent(supabase, eventId);
       if (error) return { error };
       if (event.type === "game") revalidatePublic();
     }
-
     revalidateTeam();
     return null;
   }
 
   if (!isStatus(intent)) return { error: "Choose Going or Not Going." };
+  if (!canRespond(membership)) return { error: "Only active players can respond to events." };
 
-  const { error } = await requireAdminClient()
+  const { error } = await supabase
     .from("availability")
     .upsert(
       eventIds.map((eventId) => ({
         event_id: eventId,
-        roster_id: session.rosterId,
+        roster_id: membership.rosterId,
         status: intent,
       })),
       { onConflict: "event_id,roster_id" },
@@ -216,62 +225,113 @@ export async function bulkAction(_state: ActionState, data: FormData) {
 
 // MARK: Settings
 
-/** Settings' one profile form. An emptied phone field takes the number off
- *  file, which is how a player opts back out of reminders. */
-export async function updateProfile(_state: ActionState, data: FormData) {
-  const session = await requireTeamSession();
+/** Settings' profile form: the hometown, which is the one thing a person
+ *  edits about themselves here. */
+export async function updateProfile(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireMember();
 
-  const phone = digits(data);
-  const complaint = badPhone(phone);
-  if (complaint) return { error: complaint };
-
-  const member = await findMe(session.rosterId, session.teamId);
-  if (!member) return { error: "Your roster entry could not be found." };
-
-  const { error } = await requireAdminClient()
+  const { error } = await (await supabaseUser())
     .from("people")
-    .update({ hometown: text(data, "hometown") ?? "", phone: phone || null })
-    .eq("id", member.personId);
+    .update({ hometown: text(data, "hometown") ?? "" })
+    .eq("id", membership.personId);
   if (error) return { error: error.message };
 
   revalidateTeam();
+  revalidatePublic();
   return null;
 }
 
-export async function unlockCaptain(_state: ActionState, data: FormData) {
-  const session = await requireTeamSession();
+/** Leave Team: the membership closes; the account and roster history stay. */
+export async function leaveTeam(): Promise<ActionState> {
+  const membership = await requireMember();
+  const { error } = await (await supabaseUser()).rpc("set_member_status", {
+    p_membership_id: membership.membershipId,
+    p_status: "inactive",
+  });
+  if (error) return { error: explain(error.message) };
 
-  const code = text(data, "admin_code");
-  if (!code) return { error: "Enter the admin code." };
-
-  if (!(await isAdminCode(session.teamId, code))) {
-    return { error: "Invalid admin code." };
-  }
-
-  await writeTeamSession({ ...session, captain: true });
   revalidateTeam();
-  return null;
-}
-
-export async function disableCaptain() {
-  const session = await requireTeamSession();
-  await writeTeamSession({ ...session, captain: false });
-  revalidateTeam();
-}
-
-/** The app's "Leave Team": forget everything and start over. */
-export async function leaveTeam() {
-  await clearTeamSession();
   return teamRedirect("/join");
 }
 
-/** The same, in the shape `AdminForm` wants so it can ask for confirmation. */
-export async function leaveTeamConfirmed(): Promise<ActionState> {
-  await leaveTeam();
+/** Rejoin a team left earlier, from the join page. */
+export async function rejoinTeam(data: FormData) {
+  const membershipId = text(data, "membership_id");
+  const { memberships } = await getViewer();
+  const mine = memberships.find((m) => m.membershipId === membershipId);
+  if (!mine) return teamRedirect("/join");
+
+  const { error } = await (await supabaseUser()).rpc("set_member_status", {
+    p_membership_id: mine.membershipId,
+    p_status: "active",
+  });
+  if (error) throw new Error(explain(error.message));
+
+  await rememberTeam(mine.teamId);
+  revalidateTeam();
+  return teamRedirect("");
+}
+
+// MARK: Staff — members
+
+async function memberRpc(fn: string, args: Record<string, unknown>): Promise<ActionState> {
+  const { error } = await (await supabaseUser()).rpc(fn, args);
+  if (error) return { error: explain(error.message) };
+  revalidateTeam();
+  revalidatePublic();
   return null;
 }
 
-// MARK: Captain — events
+/** Keep (true) or Remove (false) from the New Members list. */
+export async function reviewMember(_state: ActionState, data: FormData): Promise<ActionState> {
+  await requireStaff();
+  return memberRpc("review_member", {
+    p_membership_id: text(data, "membership_id"),
+    p_keep: data.get("keep") === "true",
+  });
+}
+
+export async function setMemberStatus(_state: ActionState, data: FormData): Promise<ActionState> {
+  await requireStaff();
+  return memberRpc("set_member_status", {
+    p_membership_id: text(data, "membership_id"),
+    p_status: text(data, "status"),
+  });
+}
+
+export async function setMemberRole(_state: ActionState, data: FormData): Promise<ActionState> {
+  await requireCaptain();
+  return memberRpc("set_member_role", {
+    p_membership_id: text(data, "membership_id"),
+    p_role: text(data, "role"),
+  });
+}
+
+/** Add by phone number. The role applies when that number signs in. */
+export async function inviteMember(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireStaff();
+  const phone = text(data, "phone");
+  if (!phone) return { error: "Enter a phone number." };
+
+  return memberRpc("invite_member", {
+    p_team_id: membership.teamId,
+    p_phone: phone,
+    p_role: text(data, "role") ?? "player",
+  });
+}
+
+export async function cancelInvite(_state: ActionState, data: FormData): Promise<ActionState> {
+  await requireStaff();
+  const { error } = await (await supabaseUser())
+    .from("team_invites")
+    .delete()
+    .eq("id", text(data, "invite_id") ?? "");
+  if (error) return { error: error.message };
+  revalidateTeam();
+  return null;
+}
+
+// MARK: Staff — events
 
 /** A datetime-local value pinned to the team's zone, or null when unparseable. */
 const dateTime = (data: FormData, key: string) => {
@@ -294,8 +354,8 @@ const gameColumns = (data: FormData, teamId: string) => ({
   field_id: text(data, "field_id"),
 });
 
-export async function createPractice(_state: ActionState, data: FormData) {
-  const session = await requireCaptain();
+export async function createPractice(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireStaff();
 
   const season = await getCurrentSeason();
   if (!season) return { error: "No current season." };
@@ -305,9 +365,10 @@ export async function createPractice(_state: ActionState, data: FormData) {
   if (!date) return { error: "Date is not a valid date and time." };
 
   const error = await insertWithEvent(
+    await supabaseUser(),
     "practices",
     EVENT_TYPE.practice,
-    session.teamId,
+    membership.teamId,
     season.id,
     date,
     practiceColumns(data),
@@ -323,8 +384,8 @@ export async function createPractice(_state: ActionState, data: FormData) {
  * time, on one field. Dates are walked in UTC purely as calendar arithmetic;
  * each one is then pinned to the team's zone like any other form date.
  */
-export async function createRepeatingPractices(_state: ActionState, data: FormData) {
-  const session = await requireCaptain();
+export async function createRepeatingPractices(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireStaff();
 
   const season = await getCurrentSeason();
   if (!season) return { error: "No current season." };
@@ -359,12 +420,14 @@ export async function createRepeatingPractices(_state: ActionState, data: FormDa
   if (dates.length === 0) return { error: "No practices fall in that range." };
   if (dates.length > 100) return { error: "That would create more than 100 practices." };
 
+  const supabase = await supabaseUser();
   const columns = practiceColumns(data);
   for (const date of dates) {
     const error = await insertWithEvent(
+      supabase,
       "practices",
       EVENT_TYPE.practice,
-      session.teamId,
+      membership.teamId,
       season.id,
       date,
       columns,
@@ -376,8 +439,8 @@ export async function createRepeatingPractices(_state: ActionState, data: FormDa
   return teamRedirect("");
 }
 
-export async function createGame(_state: ActionState, data: FormData) {
-  const session = await requireCaptain();
+export async function createGame(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireStaff();
 
   const season = await getCurrentSeason();
   if (!season) return { error: "No current season." };
@@ -389,12 +452,13 @@ export async function createGame(_state: ActionState, data: FormData) {
   if (!date) return { error: "Date is not a valid date and time." };
 
   const error = await insertWithEvent(
+    await supabaseUser(),
     "games",
     EVENT_TYPE.game,
-    session.teamId,
+    membership.teamId,
     season.id,
     date,
-    gameColumns(data, session.teamId),
+    gameColumns(data, membership.teamId),
   );
   if (error) return { error };
 
@@ -403,8 +467,8 @@ export async function createGame(_state: ActionState, data: FormData) {
   return teamRedirect("");
 }
 
-export async function updatePractice(_state: ActionState, data: FormData) {
-  await requireCaptain();
+export async function updatePractice(_state: ActionState, data: FormData): Promise<ActionState> {
+  await requireStaff();
 
   const eventId = text(data, "event_id");
   if (!eventId) return { error: "Missing practice." };
@@ -413,7 +477,7 @@ export async function updatePractice(_state: ActionState, data: FormData) {
   const date = dateTime(data, "date");
   if (!date) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("practices", eventId, date, {
+  const error = await updateWithEvent(await supabaseUser(), "practices", eventId, date, {
     ...practiceColumns(data),
     // An emptied notes field clears the note, as the app does.
     notes: text(data, "notes") ?? "",
@@ -424,8 +488,8 @@ export async function updatePractice(_state: ActionState, data: FormData) {
   return teamRedirect(`/events/${eventId}`);
 }
 
-export async function updateGame(_state: ActionState, data: FormData) {
-  const session = await requireCaptain();
+export async function updateGame(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireStaff();
 
   const eventId = text(data, "event_id");
   if (!eventId) return { error: "Missing game." };
@@ -436,7 +500,13 @@ export async function updateGame(_state: ActionState, data: FormData) {
   const date = dateTime(data, "date");
   if (!date) return { error: "Date is not a valid date and time." };
 
-  const error = await updateWithEvent("games", eventId, date, gameColumns(data, session.teamId));
+  const error = await updateWithEvent(
+    await supabaseUser(),
+    "games",
+    eventId,
+    date,
+    gameColumns(data, membership.teamId),
+  );
   if (error) return { error };
 
   revalidatePublic();
@@ -444,14 +514,14 @@ export async function updateGame(_state: ActionState, data: FormData) {
   return teamRedirect(`/events/${eventId}`);
 }
 
-export async function deleteEvent(_state: ActionState, data: FormData) {
-  const session = await requireCaptain();
+export async function deleteEvent(_state: ActionState, data: FormData): Promise<ActionState> {
+  const membership = await requireStaff();
 
   const eventId = text(data, "event_id");
-  const event = eventId ? await getEvent(eventId, session.teamId) : null;
+  const event = eventId ? await getEvent(eventId, membership.teamId) : null;
   if (!eventId || !event) return { error: "Missing event." };
 
-  const error = await deleteWithEvent(TABLE_FOR[event.type], eventId);
+  const error = await deleteWithEvent(await supabaseUser(), eventId);
   if (error) return { error };
 
   if (event.type === "game") revalidatePublic();
@@ -459,7 +529,7 @@ export async function deleteEvent(_state: ActionState, data: FormData) {
   return teamRedirect("");
 }
 
-// MARK: Captain — reminders
+// MARK: Staff — reminders
 
 export type ReminderState = { error?: string; sent?: number; failed?: number } | null;
 
@@ -468,11 +538,17 @@ export async function sendReminder(
   _state: ReminderState,
   data: FormData,
 ): Promise<ReminderState> {
-  const session = await requireCaptain();
+  const membership = await requireStaff();
 
   const rosterIds = data
     .getAll("roster_id")
     .filter((value): value is string => typeof value === "string");
 
-  return deliverReminder(session.teamId, rosterIds, text(data, "message") ?? "");
+  return deliverReminder(
+    membership.teamId,
+    rosterIds,
+    text(data, "message") ?? "",
+    membership.personId,
+    text(data, "event_id"),
+  );
 }

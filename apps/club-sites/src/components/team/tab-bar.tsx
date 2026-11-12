@@ -7,17 +7,19 @@ import { teamPath } from "@/lib/app-host";
 import { isActivePath } from "@/lib/nav";
 
 /**
- * The app's two-tab `TabView`. Pinned to the bottom on phones, where the
+ * The app's `TabView`: Schedule and Settings, plus Members for staff. Pinned to the bottom on phones, where the
  * thumb is; a plain row under the site header from `md` up.
  */
 const TABS = [
-  { path: "", label: "Schedule", exact: true },
-  { path: "/settings", label: "Settings", exact: false },
+  { path: "", label: "Schedule", exact: true, staffOnly: false },
+  { path: "/members", label: "Members", exact: false, staffOnly: true },
+  { path: "/settings", label: "Settings", exact: false, staffOnly: false },
 ];
 
-/** `base` is this host's link prefix, from `teamBase()`. */
-export function TabBar({ base }: { base: string }) {
+/** `base` is this host's link prefix, from `teamBase()`; `staff` adds the Members tab. */
+export function TabBar({ base, staff }: { base: string; staff: boolean }) {
   const pathname = usePathname();
+  const tabs = TABS.filter((tab) => staff || !tab.staffOnly);
 
   return (
     <nav
@@ -25,7 +27,7 @@ export function TabBar({ base }: { base: string }) {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-white/15 bg-navy pb-[env(safe-area-inset-bottom)] md:static md:border-t-0 md:bg-transparent md:pb-0"
     >
       <div className="container-page flex md:justify-start md:gap-6 md:py-3">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const href = teamPath(base, tab.path);
           // Schedule owns only itself: `/settings` must not light it up.
           const active = tab.exact ? pathname === href : isActivePath(pathname, href);

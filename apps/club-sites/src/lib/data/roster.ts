@@ -102,12 +102,15 @@ export const abbreviateClass = (year: string) =>
   CLASS_ABBREVIATION[year] ?? year;
 
 /**
- * Sort orders. Positions run back-to-front the way a lineup is read, classes
+ * The roster's vocabulary, matching the database's check constraints, and
+ * its sort orders. Positions run back-to-front the way a lineup is read, classes
  * by seniority — sorting either alphabetically would produce a meaningless
  * order ("D, F, GK, MF"). Unknown values rank last rather than disappearing.
  */
-const POSITION_ORDER = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
-const CLASS_ORDER = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
+export const POSITIONS = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
+export const CLASSES = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
+const POSITION_ORDER = POSITIONS;
+const CLASS_ORDER = CLASSES;
 
 const rankIn = (order: string[], value: string) => {
   const index = order.indexOf(value);

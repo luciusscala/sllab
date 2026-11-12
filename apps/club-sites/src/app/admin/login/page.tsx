@@ -1,33 +1,36 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { login } from "@/app/admin/actions";
-import { AdminForm } from "@/components/admin/admin-form";
-import { isAdmin } from "@/lib/admin-auth";
+import { PhoneSignIn } from "@/components/phone-sign-in";
+import { getViewer, isAdmin } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Admin login" };
 
+/**
+ * The same phone sign-in as the team app. The dashboard opens for captains
+ * and coaches of the club team; anyone else who signs in is told so.
+ */
 export default async function LoginPage() {
   if (await isAdmin()) redirect("/admin");
+  const { userId } = await getViewer();
 
   return (
     <div className="container-page py-16">
       <div className="mx-auto max-w-sm rounded-lg bg-background p-6 text-foreground">
         <h1 className="headline text-2xl">Admin</h1>
-
-        <AdminForm action={login} submitLabel="Sign in" className="mt-4">
-          <label className="field-label" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className="field"
-          />
-        </AdminForm>
+        {userId ? (
+          <p className="mt-3 text-sm text-muted">
+            This sign-in isn&rsquo;t a captain or coach of the club team. Ask a captain to add
+            your number as staff, then sign in again.
+          </p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-muted">For the club&rsquo;s captains and coaches.</p>
+            <div className="mt-4">
+              <PhoneSignIn next="/admin" />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
