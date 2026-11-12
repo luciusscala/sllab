@@ -6,33 +6,106 @@ policy), function and storage bucket, as ordered migrations.
 The live project is the one the apps point at (`uossjvkayfchytbycumd`). Changes are made
 here as migrations and pushed, never edited by hand in the dashboard.
 
-## First-time setup: capture the live schema
+## Layout
 
-`migrations/` is empty until the live project is pulled once. This needs your Supabase
-login and the project's database password (Project Settings → Database).
+```
+config.toml        Auth, API and local-stack settings; pushed with `config push`
+migrations/        The schema, oldest first. The first file is the live baseline.
+cutover/           A migration held back on purpose; see "Cutover" below
+```
+
+## Accounts
+
+People sign in with their phone number (a one-time code by SMS) or, as guests, with no
+sign-in at all beyond a team code. Each person has one account and one `memberships`
+row per team, with a **role** (`guest`, `player`, `captain`, `coach`) and a **status**
+(`active`, `away`, `inactive`). Every rule checks the membership on the specific team.
+
+What a client calls, all `SECURITY DEFINER` functions reachable through PostgREST's
+`rpc`:
+
+| Function | Who | Does |
+|---|---|---|
+| `lookup_team(code)` | anyone | The team's name and crest for a code, nothing else |
+| `join_team(code, name?, position?, class?, number?, sms_consent?)` | signed in | The whole join: guest, returning player by phone match, invited staff, or new player. Returns `needs_profile` when it needs the optional arguments |
+| `my_memberships()` | signed in | The caller's teams, roles and current roster rows |
+| `continue_season(team)` | player | "Yes, I'm playing this season": carries last season's roster row forward |
+| `set_member_status(membership, status)` | self, or staff | Leave, rejoin, mark away. Staff can't touch other staff; captains can |
+| `set_member_role(membership, role)` | captain | Promote to captain, add or remove a coach |
+| `review_member(membership, keep)` | staff | The New Members list: Keep or Remove |
+| `invite_member(team, phone, role)` | staff (captains for staff roles) | Pre-add by number; the role applies when that number signs in |
+| `delete_my_account()` | signed in | Keeps roster history, drops the number and the sign-in, closes memberships |
+
+Phone numbers live in `people_contacts` and team codes in `team_secrets`. Neither is
+readable through the API; only the functions above and the server's secret key reach
+them. Numbers are stored as digits with the country code (`14155550100`), the form
+Supabase Auth uses, so a JWT's `phone` claim matches with plain equality.
+
+`membership_history` records every status change, so attendance can count only the
+stretches a player was active. `reminder_log` records each reminder a captain sends,
+which is how the server caps a team's daily volume.
+
+## First-time setup
+
+This needs your Supabase login and the project's database password (Project Settings →
+Database).
 
 ```sh
 npx supabase@3.1.0 login
 npx supabase@3.1.0 link --project-ref uossjvkayfchytbycumd
-npx supabase@3.1.0 db pull --remote # writes migrations/<timestamp>_remote_schema.sql
 ```
 
 The CLI is pinned to 3.1.0. From v3, database commands target the local stack unless
-given `--remote`. `db pull` uses Docker to diff the schema, so Docker must be running.
-When it asks to confirm writing to the hosted database, answer yes: it only records the
-baseline in the migration history, so a later `db push --remote` will not recreate existing tables. Check that
-`[db] major_version` in `config.toml` matches the live project's Postgres version first.
+given `--remote`.
 
-Commit the generated migration. It is the baseline: every later change is a new file.
+### Secrets
+
+`config.toml` reads these from the environment; the CLI also loads a `supabase/.env`
+file, which is git-ignored. None of them belong in the repo.
+
+| Variable | From |
+|---|---|
+| `SUPABASE_AUTH_SMS_TWILIO_ACCOUNT_SID` | Twilio console home |
+| `SUPABASE_AUTH_SMS_TWILIO_MESSAGE_SERVICE_SID` | The Messaging Service (MG…) that sends the codes |
+| `SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN` | Twilio console home |
+| `SUPABASE_AUTH_CAPTCHA_SECRET` | Only if `[auth.captcha]` is enabled |
+
+For App Review, set a test phone number and code under Authentication → Providers →
+Phone in the dashboard (the `[auth.sms.test_otp]` block, kept out of the repo) and put
+both in the review notes.
 
 ## Day to day
 
 ```sh
-npx supabase@3.1.0 start                      # local Postgres, Auth and Storage in Docker
+npx supabase@3.1.0 start                      # local Postgres, Auth and PostgREST in Docker
 npx supabase@3.1.0 migration new <name>       # write the change as SQL
 npx supabase@3.1.0 db reset                   # rebuild local from migrations + seed.sql
 npx supabase@3.1.0 db push --remote           # apply new migrations to the live project
+npx supabase@3.1.0 config push                # apply config.toml (auth settings) to the live project
 ```
+
+Before any migration that changes existing rows, take a restore point:
+
+```sh
+npx supabase@3.1.0 db dump --remote -f backup/schema.sql
+npx supabase@3.1.0 db dump --remote --data-only -f backup/data.sql
+```
+
+## Cutover
+
+The accounts migrations are additive: the new tables, functions and policies sit
+alongside the original open policies, so the App Store build keeps working while
+players update. `cutover/` holds the migration that ends that window. It drops the
+open policies and the columns that moved (`people.phone`, `teams.team_code`,
+`teams.admin_code`), and trims the API roles' table privileges to what the policies
+allow.
+
+When every client is on the accounts release:
+
+1. Raise `app_config.min_version` so older builds show the update screen.
+2. `git mv cutover/<file>.sql migrations/` and `db push --remote`.
+
+Until then it must stay out of `migrations/`, or `db push` would apply it.
 
 ## AI Disclosure
 
