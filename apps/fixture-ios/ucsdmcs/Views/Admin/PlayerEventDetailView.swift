@@ -5,8 +5,10 @@ struct PlayerEventDetailView: View {
     let dateFilter: DashboardDateFilter
     @Environment(DataService.self) private var dataService
 
+    /// Only the events that fell while this player was on the team.
     private var events: [Event] {
         dataService.filteredSeasonEvents(since: dateFilter.startDate)
+            .filter { dataService.activePeriods.isActive(player.rosterEntry.personId, at: $0.eventDate) }
     }
 
     private var missedEvents: [(event: Event, reason: String)] {

@@ -15,7 +15,7 @@ struct DataServiceTests {
         RosterEntry(
             id: id, personId: UUID(), seasonId: seasonId, teamId: teamId,
             playerClass: "Senior", position: "Handler", number: number,
-            people: Person(id: UUID(), name: name, hometown: nil, picturePath: nil, phone: nil)
+            people: Person(id: UUID(), name: name, hometown: nil, picturePath: nil)
         )
     }
 

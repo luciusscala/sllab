@@ -1,9 +1,10 @@
 import SwiftUI
 
+/// Picks the screen from the session: nothing yet, the join flow, or the
+/// team. `Session.current` is the one source of truth, so leaving a team,
+/// signing out or deleting the account all land here and fall through.
 struct ContentView: View {
-    @AppStorage("teamID") private var savedTeamID: String = ""
-    @AppStorage("rosterID") private var savedRosterID: String = ""
-    @AppStorage("phoneEntered") private var phoneEntered: String = ""
+    @Environment(Session.self) private var session
     @Environment(DataService.self) private var dataService
     @Environment(UpdateChecker.self) private var updateChecker
     @Environment(\.scenePhase) private var scenePhase
@@ -12,43 +13,18 @@ struct ContentView: View {
         Group {
             if updateChecker.updateRequired {
                 MandatoryUpdateView()
-            } else if savedTeamID.isEmpty {
-                TeamSelectionView()
-            } else if savedRosterID.isEmpty {
-                RosterSelectionView()
-            } else if phoneEntered.isEmpty,
-                      let rosterUUID = UUID(uuidString: savedRosterID) {
-                PhoneNumberEntryView(
-                    personId: personId(for: rosterUUID)
-                )
-                .task {
-                    // Ensure roster is loaded so we can look up personId
-                    if dataService.roster.isEmpty {
-                        await dataService.fetchCurrentSeason()
-                        if let season = dataService.currentSeason {
-                            await dataService.fetchRoster(seasonId: season.id)
-                        }
-                    }
-                    // Skip phone entry if the person already has one on file
-                    if let entry = dataService.roster.first(where: { $0.id == rosterUUID }),
-                       let phone = entry.people?.phone, !phone.isEmpty {
-                        phoneEntered = "true"
-                    }
-                }
-            } else if let rosterUUID = UUID(uuidString: savedRosterID) {
-                MainTabView(rosterID: rosterUUID)
+            } else if session.state == .loading {
+                ProgressView()
+            } else if session.state == .signedIn, let membership = session.current {
+                MainTabView(membership: membership)
+                    .id(membership.teamId)
             } else {
-                TeamSelectionView()
-                    .onAppear {
-                        savedRosterID = ""
-                        savedTeamID = ""
-                        phoneEntered = ""
-                    }
+                // One branch for signed out and signed in without a team, so
+                // signing in mid-flow doesn't rebuild the join screens.
+                JoinFlowView()
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: savedTeamID)
-        .animation(.easeInOut(duration: 0.3), value: savedRosterID)
-        .animation(.easeInOut(duration: 0.3), value: phoneEntered)
+        .animation(.easeInOut(duration: 0.3), value: session.current?.teamId)
         .task {
             await updateChecker.check()
         }
@@ -57,27 +33,24 @@ struct ContentView: View {
                 Task { await updateChecker.check() }
             }
         }
-        .onAppear {
-            dataService.currentTeamId = UUID(uuidString: savedTeamID)
+        .onChange(of: session.current?.teamId, initial: true) { _, teamId in
+            dataService.currentTeamId = teamId
         }
-        .onChange(of: savedTeamID) { _, newValue in
-            dataService.currentTeamId = UUID(uuidString: newValue)
-        }
-    }
-
-    private func personId(for rosterUUID: UUID) -> UUID {
-        dataService.roster.first { $0.id == rosterUUID }?.personId ?? UUID()
     }
 }
 
 struct MainTabView: View {
-    let rosterID: UUID
+    let membership: Membership
 
     var body: some View {
         TabView {
-            ScheduleView(rosterID: rosterID)
+            ScheduleView(membership: membership)
                 .tabItem { Label("Schedule", systemImage: "calendar") }
-            SettingsView()
+            if membership.isStaff {
+                MembersView(membership: membership)
+                    .tabItem { Label("Members", systemImage: "person.3") }
+            }
+            SettingsView(membership: membership)
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .tint(.white)

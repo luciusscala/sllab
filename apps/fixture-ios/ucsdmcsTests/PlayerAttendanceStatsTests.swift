@@ -7,7 +7,7 @@ struct PlayerAttendanceStatsTests {
     static let roster = RosterEntry(
         id: UUID(), personId: UUID(), seasonId: UUID(), teamId: UUID(),
         playerClass: "Junior", position: "Cutter", number: 10,
-        people: Person(id: UUID(), name: "Test Player", hometown: nil, picturePath: nil, phone: nil)
+        people: Person(id: UUID(), name: "Test Player", hometown: nil, picturePath: nil)
     )
 
     static func makeStats(

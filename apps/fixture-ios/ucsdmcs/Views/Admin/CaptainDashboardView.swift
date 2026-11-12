@@ -40,19 +40,10 @@ struct CaptainDashboardView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             guard !dataService.hasLoadedDashboard else { return }
-            if let season = dataService.currentSeason {
-                await dataService.fetchAllSeasonEvents(seasonId: season.id)
-                await dataService.fetchAllSeasonAvailability()
-                dataService.hasLoadedDashboard = true
-            }
+            await dataService.loadDashboard()
         }
         .refreshable {
-            if let season = dataService.currentSeason {
-                dataService.hasLoadedDashboard = false
-                await dataService.fetchAllSeasonEvents(seasonId: season.id)
-                await dataService.fetchAllSeasonAvailability()
-                dataService.hasLoadedDashboard = true
-            }
+            await dataService.loadDashboard()
         }
     }
 

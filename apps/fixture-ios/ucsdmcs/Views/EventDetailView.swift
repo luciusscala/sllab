@@ -2,11 +2,10 @@ import SwiftUI
 
 struct EventDetailView: View {
     let eventID: UUID
-    let rosterID: UUID
+    let membership: Membership
     @Environment(DataService.self) private var dataService
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
-    @Environment(CaptainSession.self) private var captain
     @State private var showEditSheet = false
     @State private var showDeleteAlert = false
     @State private var showMessageComposer = false
@@ -15,12 +14,19 @@ struct EventDetailView: View {
         dataService.events.first { $0.id == eventID }
     }
 
+    /// Nil when this person can't answer: a guest, a coach, someone away.
+    private var rosterID: UUID? {
+        membership.canRespond ? membership.rosterId : nil
+    }
+
+    /// Answers from people still on the team.
     private var responses: [Availability] {
-        dataService.availabilityByEvent[eventID] ?? []
+        dataService.activeResponses(dataService.availabilityByEvent[eventID] ?? [])
     }
 
     private var myStatus: AvailabilityStatus? {
-        responses.first { $0.rosterId == rosterID }?.status
+        guard let rosterID else { return nil }
+        return responses.first { $0.rosterId == rosterID }?.status
     }
 
     private var noResponseRoster: [RosterEntry] {
@@ -32,7 +38,9 @@ struct EventDetailView: View {
             if let event {
                 VStack(spacing: 24) {
                     eventInfoCard(event)
-                    availabilityPickerSection(event)
+                    if let rosterID {
+                        availabilityPickerSection(event, rosterID: rosterID)
+                    }
                     rosterBreakdown
                 }
                 .padding()
@@ -43,7 +51,7 @@ struct EventDetailView: View {
         .navigationTitle(event?.typeLabel ?? "Event")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if captain.isCaptain, let event {
+            if membership.isStaff, let event {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         showMessageComposer = true
@@ -67,7 +75,7 @@ struct EventDetailView: View {
             Button("Delete", role: .destructive) {
                 guard let event else { return }
                 Task {
-                    await dataService.deleteEvent(eventId: event.id, eventType: event.eventType)
+                    await dataService.deleteEvent(eventId: event.id)
                     dismiss()
                 }
             }
@@ -188,7 +196,7 @@ struct EventDetailView: View {
 
     // MARK: - Availability Picker
 
-    private func availabilityPickerSection(_ event: Event) -> some View {
+    private func availabilityPickerSection(_ event: Event, rosterID: UUID) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Your Availability")
                 .font(.headline)

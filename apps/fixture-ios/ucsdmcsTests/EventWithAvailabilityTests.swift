@@ -45,7 +45,7 @@ struct EventWithAvailabilityTests {
         RosterEntry(
             id: id, personId: UUID(), seasonId: UUID(), teamId: teamId,
             playerClass: "Senior", position: "Handler", number: 1,
-            people: Person(id: UUID(), name: "Player", hometown: nil, picturePath: nil, phone: nil)
+            people: Person(id: UUID(), name: "Player", hometown: nil, picturePath: nil)
         )
     }
 

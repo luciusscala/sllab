@@ -1,14 +1,16 @@
 import SwiftUI
 
 struct ScheduleView: View {
-    let rosterID: UUID
+    let membership: Membership
     @Environment(DataService.self) private var dataService
     @Environment(DeepLinkManager.self) private var deepLinkManager
-    @Environment(CaptainSession.self) private var captain
+    @Environment(Session.self) private var session
     @State private var showPracticeForm = false
     @State private var showRepeatingForm = false
     @State private var showGameForm = false
     @State private var navigationPath = NavigationPath()
+    @State private var seasonError: String?
+    @State private var isAnsweringSeason = false
 
     @State private var hasScrolledToToday = false
 
@@ -20,6 +22,15 @@ struct ScheduleView: View {
     @State private var selectedEventIDs: Set<UUID> = []
     @State private var showBulkDeleteAlert = false
     @State private var isBulkActionLoading = false
+
+    /// This person's roster row, when they may answer for it. Nil for guests,
+    /// coaches, anyone away, and a returning player who hasn't said they're
+    /// back this season.
+    private var rosterID: UUID? {
+        membership.canRespond ? membership.rosterId : nil
+    }
+
+    private var canSelect: Bool { rosterID != nil || membership.isStaff }
 
     private var allEventIDs: Set<UUID> {
         Set(groupedEvents.flatMap { $0.events.map(\.event.id) })
@@ -57,9 +68,14 @@ struct ScheduleView: View {
                     eventList
                 }
             }
-            .navigationTitle("Schedule")
+            .safeAreaInset(edge: .top) {
+                if membership.needsSeasonAnswer {
+                    seasonPrompt
+                }
+            }
+            .navigationTitle(membership.teamName)
             .navigationDestination(for: UUID.self) { eventID in
-                EventDetailView(eventID: eventID, rosterID: rosterID)
+                EventDetailView(eventID: eventID, membership: membership)
             }
             .navigationDestination(for: String.self) { route in
                 if route == "dashboard" {
@@ -76,7 +92,7 @@ struct ScheduleView: View {
                                 selectedEventIDs = allEventIDs
                             }
                         }
-                    } else if captain.isCaptain {
+                    } else if membership.isStaff {
                         HStack(spacing: 4) {
                             Menu {
                                 Button {
@@ -109,7 +125,7 @@ struct ScheduleView: View {
                             exitSelectionMode()
                         }
                         .fontWeight(.semibold)
-                    } else {
+                    } else if canSelect {
                         Button("Select") {
                             isSelecting = true
                         }
@@ -124,6 +140,11 @@ struct ScheduleView: View {
                 Button("Cancel", role: .cancel) { }
             } message: {
                 Text("This will permanently delete the selected events and all associated availability data.")
+            }
+            .alert("Couldn't Save", isPresented: Binding(get: { seasonError != nil }, set: { if !$0 { seasonError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(seasonError ?? "")
             }
             .sheet(isPresented: $showPracticeForm) {
                 PracticeFormView()
@@ -156,6 +177,65 @@ struct ScheduleView: View {
                     deepLinkManager.pendingEventID = nil
                 }
             }
+            // Saying yes to the season adds a roster row; fetch it so
+            // responses can be made against it.
+            .onChange(of: membership.rosterId) { _, _ in
+                Task {
+                    if let season = dataService.currentSeason {
+                        await dataService.fetchRoster(seasonId: season.id)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Season Prompt
+
+    /// A returning player, before they're on this season's roster.
+    private var seasonPrompt: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Playing this season?")
+                .font(.headline)
+            Text("Say yes to get on the roster and respond to events.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                Button {
+                    Task { await answerSeason(playing: true) }
+                } label: {
+                    Text("Yes, I'm playing")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                Button {
+                    Task { await answerSeason(playing: false) }
+                } label: {
+                    Text("Not this season")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            .disabled(isAnsweringSeason)
+        }
+        .padding()
+        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    private func answerSeason(playing: Bool) async {
+        isAnsweringSeason = true
+        defer { isAnsweringSeason = false }
+        do {
+            if playing {
+                try await session.continueSeason()
+            } else {
+                try await session.setMyStatus(.away, membership: membership)
+            }
+        } catch {
+            seasonError = Session.explain(error)
         }
     }
 
@@ -171,7 +251,7 @@ struct ScheduleView: View {
                             Group {
                                 if isPast {
                                     NavigationLink(value: item.event.id) {
-                                        EventRow(item: item)
+                                        EventRow(item: item, showsResponse: rosterID != nil)
                                     }
                                 } else {
                                     eventCell(for: item)
@@ -221,12 +301,13 @@ struct ScheduleView: View {
                 EventRow(
                     item: item,
                     isSelecting: true,
-                    isSelected: selectedEventIDs.contains(item.event.id)
+                    isSelected: selectedEventIDs.contains(item.event.id),
+                    showsResponse: rosterID != nil
                 )
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-        } else {
+        } else if let rosterID {
             NavigationLink(value: item.event.id) {
                 EventRow(item: item) { status in
                     Task {
@@ -238,6 +319,10 @@ struct ScheduleView: View {
                     }
                 }
             }
+        } else {
+            NavigationLink(value: item.event.id) {
+                EventRow(item: item, showsResponse: false)
+            }
         }
     }
 
@@ -245,29 +330,31 @@ struct ScheduleView: View {
 
     private var bulkActionBar: some View {
         HStack(spacing: 0) {
-            Button {
-                Task { await performBulkAvailability(status: .yes) }
-            } label: {
-                Label("Going", systemImage: "checkmark")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color("availabilityGreen"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .contentShape(Rectangle())
+            if rosterID != nil {
+                Button {
+                    Task { await performBulkAvailability(status: .yes) }
+                } label: {
+                    Label("Going", systemImage: "checkmark")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color("availabilityGreen"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .contentShape(Rectangle())
+                }
+
+                Button {
+                    Task { await performBulkAvailability(status: .no) }
+                } label: {
+                    Label("Not Going", systemImage: "xmark")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color("availabilityRed"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .contentShape(Rectangle())
+                }
             }
 
-            Button {
-                Task { await performBulkAvailability(status: .no) }
-            } label: {
-                Label("Not Going", systemImage: "xmark")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color("availabilityRed"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .contentShape(Rectangle())
-            }
-
-            if captain.isCaptain {
+            if membership.isStaff {
                 Button {
                     showBulkDeleteAlert = true
                 } label: {
@@ -302,6 +389,7 @@ struct ScheduleView: View {
     }
 
     private func performBulkAvailability(status: AvailabilityStatus) async {
+        guard let rosterID else { return }
         isBulkActionLoading = true
         defer { isBulkActionLoading = false }
         await dataService.bulkSetAvailability(
@@ -334,6 +422,7 @@ struct ScheduleView: View {
         if let season = dataService.currentSeason {
             await dataService.fetchEvents(seasonId: season.id)
             await dataService.fetchRoster(seasonId: season.id)
+            await dataService.fetchMembers()
             await dataService.fetchAllAvailability(for: dataService.events.map(\.id))
             dataService.hasLoadedSchedule = true
         }

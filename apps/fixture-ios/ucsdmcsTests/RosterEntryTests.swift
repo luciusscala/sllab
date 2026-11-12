@@ -6,7 +6,7 @@ struct RosterEntryTests {
 
     static let person = Person(
         id: UUID(), name: "John Doe", hometown: "San Diego",
-        picturePath: nil, phone: "555-1234"
+        picturePath: nil
     )
 
     static func makeEntry(

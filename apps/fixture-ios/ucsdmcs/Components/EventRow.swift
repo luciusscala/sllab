@@ -4,6 +4,9 @@ struct EventRow: View {
     let item: EventWithAvailability
     var isSelecting: Bool = false
     var isSelected: Bool = false
+    /// False for someone who can't respond (a guest, a coach): no status
+    /// column at all rather than an empty one.
+    var showsResponse: Bool = true
     var onQuickRespond: ((AvailabilityStatus) -> Void)?
 
     var body: some View {
@@ -60,7 +63,9 @@ struct EventRow: View {
             Spacer()
 
             // Status indicator
-            if let status = item.currentRosterStatus {
+            if !showsResponse {
+                EmptyView()
+            } else if let status = item.currentRosterStatus {
                 Image(systemName: status.icon)
                     .font(.title3)
                     .foregroundStyle(status.color)

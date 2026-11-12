@@ -4,7 +4,7 @@ struct MessageComposerView: View {
     let event: Event
     let eventID: UUID
     @Environment(DataService.self) private var dataService
-    @Environment(CaptainSession.self) private var captain
+    @Environment(Session.self) private var session
     @Environment(\.dismiss) private var dismiss
     @State private var selectedRosterIds: Set<UUID> = []
     @State private var messageText: String = ""
@@ -47,7 +47,7 @@ struct MessageComposerView: View {
                         .font(.caption)
 
                         Button("Select All") {
-                            selectedRosterIds = Set(dataService.roster.map(\.id))
+                            selectedRosterIds = Set(dataService.activeRoster.map(\.id))
                         }
                         .buttonStyle(.bordered)
                         .font(.caption)
@@ -62,7 +62,7 @@ struct MessageComposerView: View {
 
                 // Roster list with checkboxes
                 Section("Players (\(selectedCount) selected)") {
-                    ForEach(dataService.roster) { entry in
+                    ForEach(dataService.activeRoster) { entry in
                         Button {
                             if selectedRosterIds.contains(entry.id) {
                                 selectedRosterIds.remove(entry.id)
@@ -155,7 +155,7 @@ struct MessageComposerView: View {
         defer { isSending = false }
 
         do {
-            let result = try await captain.sendReminder(to: selectedRosterIds, message: messageText)
+            let result = try await session.sendReminder(eventID: eventID, to: selectedRosterIds, message: messageText)
             resultAlert = .success(result)
         } catch {
             resultAlert = .error(error.localizedDescription)

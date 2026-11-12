@@ -1,6 +1,9 @@
 import Foundation
 import Supabase
 
+/// The team's data: season, roster, events, responses, members. Every read
+/// and write goes straight to Supabase as the signed-in person, so the
+/// database's rules decide what comes back; this class shapes it for views.
 @Observable
 final class DataService {
 
@@ -16,6 +19,11 @@ final class DataService {
     var socialEvents: [UUID: SocialEvent] = [:]
     var tournaments: [UUID: Tournament] = [:]
 
+    // Members
+    var members: [TeamMember] = []
+    var invites: [Invite] = []
+    var activePeriods = ActivePeriods()
+
     // Captain dashboard
     var allSeasonEvents: [Event] = []
     var allSeasonAvailability: [UUID: [Availability]] = [:]
@@ -26,8 +34,6 @@ final class DataService {
     var isLoading = false
     var hasLoadedSchedule = false
     var errorMessage: String?
-
-
 
     private var supabase: SupabaseClient { SupabaseConfig.client }
 
@@ -40,33 +46,6 @@ final class DataService {
                 .select()
                 .execute()
                 .value
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    func fetchTeamByCode(_ code: String) async -> Team? {
-        do {
-            let results: [Team] = try await supabase
-                .from("teams")
-                .select()
-                .eq("team_code", value: code)
-                .execute()
-                .value
-            return results.first
-        } catch {
-            errorMessage = error.localizedDescription
-            return nil
-        }
-    }
-
-    func updatePhone(personId: UUID, phone: String) async {
-        do {
-            try await supabase
-                .from("people")
-                .update(["phone": phone])
-                .eq("id", value: personId.uuidString)
-                .execute()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -142,6 +121,122 @@ final class DataService {
             print("fetchRoster error: \(error)")
             errorMessage = "Roster: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Members
+
+    func fetchMembers() async {
+        guard let teamId = currentTeamId else { return }
+        do {
+            members = try await supabase
+                .from("memberships")
+                .select("*, people(*)")
+                .eq("team_id", value: teamId.uuidString)
+                .execute()
+                .value
+            members.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Staff only; the policy returns nothing for anyone else.
+    func fetchInvites() async {
+        guard let teamId = currentTeamId else { return }
+        do {
+            invites = try await supabase
+                .from("team_invites")
+                .select()
+                .eq("team_id", value: teamId.uuidString)
+                .is("accepted_at", value: nil)
+                .order("created_at")
+                .execute()
+                .value
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Staff only. Builds the active periods the dashboard counts over.
+    func fetchMembershipHistory() async {
+        guard !members.isEmpty else { return }
+        do {
+            let history: [MembershipStatusChange] = try await supabase
+                .from("membership_history")
+                .select()
+                .in("membership_id", values: members.map(\.id.uuidString))
+                .execute()
+                .value
+            let personOf = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0.personId) })
+            activePeriods = ActivePeriods(history: history, personOf: personOf)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// People currently on the team. Until members have loaded, everyone on
+    /// the roster counts, so the schedule never shows an empty list first.
+    var activePersonIds: Set<UUID>? {
+        members.isEmpty ? nil : Set(members.filter { $0.status == .active }.map(\.personId))
+    }
+
+    /// The roster less anyone away or gone: who is asked, listed and counted.
+    var activeRoster: [RosterEntry] {
+        guard let active = activePersonIds else { return roster }
+        return roster.filter { active.contains($0.personId) }
+    }
+
+    /// `responses` for people who are still around. Someone away keeps their
+    /// answer in the database; it just isn't shown.
+    func activeResponses(_ responses: [Availability]) -> [Availability] {
+        let rosterIds = Set(activeRoster.map(\.id))
+        return responses.filter { rosterIds.contains($0.rosterId) }
+    }
+
+    // MARK: Members — staff actions
+
+    private func memberRpc(_ fn: String, params: some Encodable & Sendable) async throws {
+        try await supabase.rpc(fn, params: params).execute()
+        await fetchMembers()
+    }
+
+    /// Keep (true) or Remove (false) from the New Members list.
+    func reviewMember(_ member: TeamMember, keep: Bool) async throws {
+        struct Params: Encodable { let p_membership_id: UUID; let p_keep: Bool }
+        try await memberRpc("review_member", params: Params(p_membership_id: member.id, p_keep: keep))
+        if !keep, let seasonId = currentSeason?.id { await fetchRoster(seasonId: seasonId) }
+    }
+
+    func setStatus(_ status: MemberStatus, for member: TeamMember) async throws {
+        struct Params: Encodable { let p_membership_id: UUID; let p_status: String }
+        try await memberRpc("set_member_status", params: Params(p_membership_id: member.id, p_status: status.rawValue))
+    }
+
+    /// Captains only.
+    func setRole(_ role: Role, for member: TeamMember) async throws {
+        struct Params: Encodable { let p_membership_id: UUID; let p_role: String }
+        try await memberRpc("set_member_role", params: Params(p_membership_id: member.id, p_role: role.rawValue))
+        if let seasonId = currentSeason?.id { await fetchRoster(seasonId: seasonId) }
+    }
+
+    /// Add by phone number; the role applies when that number signs in.
+    func invite(phone: String, role: Role) async throws {
+        guard let teamId = currentTeamId else { return }
+        struct Params: Encodable { let p_team_id: UUID; let p_phone: String; let p_role: String }
+        try await supabase
+            .rpc("invite_member", params: Params(p_team_id: teamId, p_phone: phone, p_role: role.rawValue))
+            .execute()
+        await fetchMembers()
+        await fetchInvites()
+    }
+
+    func cancelInvite(_ invite: Invite) async throws {
+        try await supabase
+            .from("team_invites")
+            .delete()
+            .eq("id", value: invite.id.uuidString)
+            .execute()
+        await fetchInvites()
     }
 
     // MARK: - Events
@@ -296,7 +391,6 @@ final class DataService {
             )]
         }
 
-        // Fire and forget — local state is the source of truth
         do {
             let payload: [String: String] = [
                 "event_id": eventId.uuidString,
@@ -308,6 +402,8 @@ final class DataService {
                 .upsert(payload, onConflict: "event_id,roster_id")
                 .execute()
         } catch {
+            // The database said no (not a player, or not active): show the truth.
+            await fetchAvailability(eventId: eventId)
             errorMessage = error.localizedDescription
         }
     }
@@ -337,10 +433,10 @@ final class DataService {
 
     // MARK: - Composite Helpers
 
-    func eventsWithAvailability(currentRosterId: UUID) -> [EventWithAvailability] {
+    func eventsWithAvailability(currentRosterId: UUID?) -> [EventWithAvailability] {
         events.map { event in
-            let responses = availabilityByEvent[event.id] ?? []
-            let myStatus = responses.first { $0.rosterId == currentRosterId }?.status
+            let responses = activeResponses(availabilityByEvent[event.id] ?? [])
+            let myStatus = currentRosterId.flatMap { id in responses.first { $0.rosterId == id }?.status }
             var item = EventWithAvailability(
                 event: event,
                 responses: responses,
@@ -356,7 +452,7 @@ final class DataService {
 
     func rosterWithoutResponse(eventId: UUID) -> [RosterEntry] {
         let respondedIds = Set((availabilityByEvent[eventId] ?? []).map(\.rosterId))
-        return roster.filter { !respondedIds.contains($0.id) }
+        return activeRoster.filter { !respondedIds.contains($0.id) }
     }
 
     // MARK: - Admin: Create Events
@@ -531,34 +627,9 @@ final class DataService {
 
     // MARK: - Admin: Delete Events
 
-    func deleteEvent(eventId: UUID, eventType: String) async {
+    /// The event's row cascades to its subtype row and the responses.
+    func deleteEvent(eventId: UUID) async {
         do {
-            // Delete subtype first (FK constraint)
-            let subtypeTable: String
-            switch eventType {
-            case "practice": subtypeTable = "practices"
-            case "game": subtypeTable = "games"
-            case "social": subtypeTable = "social_events"
-            case "tournament": subtypeTable = "tournaments"
-            default: subtypeTable = ""
-            }
-
-            if !subtypeTable.isEmpty {
-                try await supabase
-                    .from(subtypeTable)
-                    .delete()
-                    .eq("event_id", value: eventId.uuidString)
-                    .execute()
-            }
-
-            // Delete availability
-            try await supabase
-                .from("availability")
-                .delete()
-                .eq("event_id", value: eventId.uuidString)
-                .execute()
-
-            // Delete event
             try await supabase
                 .from("events")
                 .delete()
@@ -602,13 +673,23 @@ final class DataService {
 
     func bulkDeleteEvents(eventIds: [UUID]) async {
         for eventId in eventIds {
-            if let event = events.first(where: { $0.id == eventId }) {
-                await deleteEvent(eventId: eventId, eventType: event.eventType)
-            }
+            await deleteEvent(eventId: eventId)
         }
     }
 
     // MARK: - Captain Dashboard
+
+    /// Everything the attendance screens need: past events, every response,
+    /// and who was on the team when.
+    func loadDashboard() async {
+        guard let season = currentSeason else { return }
+        hasLoadedDashboard = false
+        await fetchAllSeasonEvents(seasonId: season.id)
+        await fetchAllSeasonAvailability()
+        if members.isEmpty { await fetchMembers() }
+        await fetchMembershipHistory()
+        hasLoadedDashboard = true
+    }
 
     func fetchAllSeasonEvents(seasonId: UUID) async {
         do {
@@ -662,16 +743,20 @@ final class DataService {
         return allSeasonEvents.filter { $0.eventDate >= since }
     }
 
+    /// Attendance for everyone currently active, over the events that fell
+    /// while they were active. Someone who joined mid-season isn't marked
+    /// absent for the weeks before.
     func playerAttendanceStats(since: Date? = nil) -> [PlayerAttendanceStats] {
         let filtered = filteredSeasonEvents(since: since)
-        let totalEvents = filtered.count
 
-        return roster.map { entry in
+        return activeRoster.map { entry in
+            var totalEvents = 0
             var goingCount = 0
             var notGoingCount = 0
             var noResponseCount = 0
 
-            for event in filtered {
+            for event in filtered where activePeriods.isActive(entry.personId, at: event.eventDate) {
+                totalEvents += 1
                 let responses = allSeasonAvailability[event.id] ?? []
                 if let response = responses.first(where: { $0.rosterId == entry.id }) {
                     switch response.status {
@@ -692,5 +777,17 @@ final class DataService {
             )
         }
         .sorted { $0.issueScore > $1.issueScore }
+    }
+
+    /// Active players with no response to any of the last `count` events:
+    /// the "haven't been around" list.
+    func quietPlayers(lastEvents count: Int = 8) -> [RosterEntry] {
+        let recent = allSeasonEvents.suffix(count)
+        guard recent.count >= count else { return [] }
+        let responded = Set(recent.flatMap { (allSeasonAvailability[$0.id] ?? []).map(\.rosterId) })
+        return activeRoster.filter { entry in
+            !responded.contains(entry.id)
+                && recent.allSatisfy { activePeriods.isActive(entry.personId, at: $0.eventDate) }
+        }
     }
 }
