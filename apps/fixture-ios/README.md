@@ -2,7 +2,7 @@
 
 Fixture by SLLAB is the iOS app players and captains use every day. Players see the team schedule and mark whether they're going. Captains create events, see who's coming, track attendance over the season, manage who's on the team, and text reminders to the players who haven't answered.
 
-It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.apple.com/us/app/fixture-management/id6812923949) as Fixture Management. The same features are available on the web, in [`apps/club-sites`](../club-sites).
+It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.apple.com/us/app/fixture-management/id6812923949) as Fixture Management. The same features are available on the web at [app.sllab.io](https://app.sllab.io), from [`apps/web`](../web).
 
 <!-- MEDIA: screenshots of the join flow, the schedule, an event with team responses, the members screen, the message composer, and the captain dashboard -->
 
@@ -27,7 +27,7 @@ It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.app
 - Track attendance across the season, counting each player only over the stretches they were on the team. Players are ranked by an issue score that weighs not responding 1.5 times more than declining, since silence is harder for a captain to plan around than a no. Each player's page lists the events they attended and the ones they missed, and why.
 
 **App behavior**
-- Event links (`app.ucsdmcs.com/events/<id>`) open the event directly in the app.
+- Event links (`app.sllab.io/events/<id>`, and `app.ucsdmcs.com/events/<id>` from older reminders) open the event directly in the app.
 - A minimum supported version is stored in the database. Older builds show an update screen. If the check can't reach the server, the app opens normally rather than blocking players.
 
 ## Requirements
@@ -48,7 +48,7 @@ Run the tests with **Product → Test** (⌘U). They cover the models, JSON deco
 ```
 ucsdmcs/
 ├── Models/       Events and their types, teams, roster, memberships, availability, attendance stats
-├── Services/     Supabase client and session, website API, data service, deep links, update check
+├── Services/     Supabase client and session, SLLAB API client, data service, deep links, update check
 ├── Views/        Screens; Join/ is signing in, Admin/ holds the captain-only ones
 ├── Components/   Reusable UI pieces
 └── Theme/        Shared colors and spacing
@@ -62,9 +62,7 @@ The Xcode project and source folder are still named `ucsdmcs`, the app's origina
 - **Supabase Auth** signs people in by phone (SMS one-time code) or anonymously as a guest. The session lives in the Keychain and refreshes itself; the app never sees a password or a token it has to protect.
 - **Supabase** stores teams, memberships, rosters, events and availability. The app reads and writes it directly as the signed-in person, and row-level security decides what each role may see and change. Joining, leaving, reviewing members and changing roles go through database functions documented in [`supabase/README.md`](../../supabase/README.md). Phone numbers live in a table the app has no access to.
 - **The [SLLAB API](../api)** (`api.sllab.io`) sends SMS reminders. The app presents its Supabase access token; the API checks it belongs to a captain or coach of the team and looks the numbers up itself.
-- **Universal links** are served by the website at `/.well-known/apple-app-site-association`.
-
-Universal links move to the platform's own domain with the web team app; see the [write-up](../../docs/writeup/sllab.pdf).
+- **Universal links** are allowed by `/.well-known/apple-app-site-association`, served by [`apps/web`](../web) for app.sllab.io and by [`apps/club-sites`](../club-sites) for the old app.ucsdmcs.com links.
 
 ## AI Disclosure
 
