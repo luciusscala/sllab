@@ -20,7 +20,7 @@ It's part of [SLLAB](../../README.md). It's built with Next.js 16, React 19 and 
 
 **The admin dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Open to the club team's captains and coaches, with the same sign-in as the team app. Public pages are cached until the dashboard changes something, so most visits never touch the database.
 
-**The iOS app's API** (`/api`). SMS reminders for Fixture, plus the universal-link file at `/.well-known/apple-app-site-association`.
+**The universal-link file** at `/.well-known/apple-app-site-association`, which lets event links open in Fixture.
 
 ## Accounts
 
@@ -28,13 +28,13 @@ People sign in with their phone number (Supabase Auth texts a code), or as guest
 
 On the web the session lives in Supabase's auth cookies, shared between the club site and the app subdomain when `APP_HOST` is set. Pages and Server Actions read it through `src/lib/auth.ts` (`requireMember`, `requireStaff`, `requireCaptain`, `requireAdmin`) and query the database as the signed-in person, so row-level security decides what they see; the guards only turn a refusal into a redirect. The admin dashboard is the exception: it writes with the secret key, behind `requireAdmin()`, because it edits tables (opponent teams, fields) that no policy opens.
 
-Phone numbers never reach the browser. Reminders name players by roster id; `src/lib/reminders.ts` looks the numbers up on the server, texts only active members who ticked the box, and caps a team at ten reminders a day.
+Phone numbers never reach the browser. The reminder composer sends roster ids to the [platform API](../api) with the signed-in person's access token, the same call the iOS app makes; the API checks they're staff, looks the numbers up, texts only active members who ticked the box, and caps a team at ten reminders a day.
 
 ## Requirements
 
 - Node.js 20.9 or later
 - A Supabase project
-- A Twilio Messaging Service, only for SMS reminders
+- For sending reminders, the [platform API](../api) (production's is used by default)
 
 ## Getting started
 
@@ -48,9 +48,9 @@ The site builds without a `.env.local`; pages that need data render empty instea
 
 ```
 src/
-├── app/          Pages and routes: admin/ the dashboard, team/ the team app, api/ the iOS app's endpoints
+├── app/          Pages and routes: admin/ the dashboard, team/ the team app
 ├── components/   UI pieces; admin/ and team/ hold section-specific ones
-├── lib/          Supabase clients (per-person and admin), auth, Twilio, formatting; data/ holds all data access
+├── lib/          Supabase clients (per-person and admin), auth, the API client, formatting; data/ holds all data access
 └── proxy.ts      Serves the team app from the app. subdomain
 public/           Static images and logos
 ```
@@ -61,11 +61,11 @@ The package is still named `ucsdmcsc-website`, from its former repository.
 
 - **Supabase** stores the club's data and hosts team crests in Storage.
 - **SportsEngine** provides league standings.
-- **Twilio** sends SMS reminders, and handles STOP and HELP replies.
+- **The [platform API](../api)** (`api.sllab.io`) sends SMS reminders.
 
 ## Where this is going
 
-This folder becomes one deployment that serves every club's public site, picking the club from the domain and rendering pages from data instead of code. The team app and admin dashboard move to the platform web app in [`apps/web`](../web), and the API moves to [`apps/api`](../api). The [write-up](../../docs/writeup/sllab.pdf) covers the plan.
+This folder becomes one deployment that serves every club's public site, picking the club from the domain and rendering pages from data instead of code. The team app and admin dashboard move to the platform web app in [`apps/web`](../web). The [write-up](../../docs/writeup/sllab.pdf) covers the plan.
 
 ## AI Disclosure
 

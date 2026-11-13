@@ -169,9 +169,9 @@ final class Session {
 
     // MARK: - Reminders
 
-    /// Texts `message` to the chosen players through the website, which looks
-    /// up their numbers; none leave the database. The app's access token is
-    /// the credential, and the server checks it names a captain or coach.
+    /// Texts `message` to the chosen players through the platform API, which
+    /// looks up their numbers; none leave the server. The app's access token
+    /// is the credential, and the API checks it names a captain or coach.
     func sendReminder(eventID: UUID, to rosterIds: Set<UUID>, message: String) async throws -> ReminderResult {
         guard let current else { throw SessionError.notOnTeam }
         let token = try await supabase.auth.session.accessToken
@@ -183,7 +183,7 @@ final class Session {
             let message: String
         }
         return try await APIClient.post(
-            "reminders",
+            "v1/reminders",
             body: Request(teamId: current.teamId, eventId: eventID, rosterIds: Array(rosterIds), message: message),
             token: token
         )

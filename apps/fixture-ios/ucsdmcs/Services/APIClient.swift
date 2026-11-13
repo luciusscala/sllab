@@ -1,12 +1,13 @@
 import Foundation
 
-/// The website's JSON endpoints under `/api`: the parts of the app that need
-/// a server rather than Supabase alone, such as captain unlock and SMS reminders.
+/// The SLLAB platform API (`apps/api`): the parts of the app that need a
+/// server rather than Supabase alone, such as SMS reminders. Routes are
+/// versioned (`v1/...`), so a build in the field keeps working when the API
+/// moves on.
 enum APIClient {
-    /// The canonical host. The apex 308-redirects here, and URLSession drops
-    /// the `Authorization` header on a cross-host redirect, so captain-only
-    /// requests sent to the apex arrive without their token.
-    static let baseURL = URL(string: "https://www.ucsdmcs.com/api")!
+    /// Called directly, with no redirect in between: URLSession drops the
+    /// `Authorization` header on a cross-host redirect.
+    static let baseURL = URL(string: "https://api.sllab.io")!
 
     /// Carries the server's own `{ "error": "..." }` message to the UI.
     struct ServerError: LocalizedError {

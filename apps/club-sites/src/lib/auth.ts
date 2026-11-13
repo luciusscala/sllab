@@ -6,7 +6,6 @@ import "server-only";
 
 import { CLUB_TEAM_ID } from "@/lib/club";
 import type { Role, Status } from "@/lib/roles";
-import { requireAdminClient } from "@/lib/supabase-admin";
 import { COOKIE_DOMAIN, isAuthConfigured, supabaseUser } from "@/lib/supabase-server";
 import { teamRedirect } from "@/lib/team-path";
 
@@ -185,63 +184,4 @@ export async function requireAdmin(): Promise<Membership> {
   const membership = await adminMembership();
   if (!membership) redirect("/admin/login");
   return membership;
-}
-
-// MARK: The app's bearer token
-
-/**
- * The iOS app sends its Supabase access token as `Authorization: Bearer`.
- * The token is verified with Auth, and the membership read with the secret
- * key, since the function `my_memberships` runs as whoever calls it and the
- * route handler has no cookie session to call it as.
- */
-export async function readBearerMembership(
-  request: Request,
-  teamId: string,
-): Promise<Membership | null> {
-  const [scheme, token] = (request.headers.get("authorization") ?? "").split(" ");
-  if (scheme !== "Bearer" || !token) return null;
-
-  const admin = requireAdminClient();
-  const {
-    data: { user },
-  } = await admin.auth.getUser(token);
-  if (!user) return null;
-
-  const { data, error } = await admin
-    .from("memberships")
-    .select("id, team_id, role, status, is_new, person:people!inner(id, name, user_id), team:teams(name, logo_path)")
-    .eq("team_id", teamId)
-    .eq("person.user_id", user.id)
-    .limit(1);
-  if (error) throw new Error(`Failed to load membership: ${error.message}`);
-
-  const row = data?.[0] as
-    | {
-        id: string;
-        team_id: string;
-        role: Role;
-        status: Status;
-        is_new: boolean;
-        person: { id: string; name: string } | { id: string; name: string }[];
-        team: { name: string; logo_path: string | null } | { name: string; logo_path: string | null }[] | null;
-      }
-    | undefined;
-  if (!row) return null;
-
-  const person = Array.isArray(row.person) ? row.person[0] : row.person;
-  const team = Array.isArray(row.team) ? row.team[0] : row.team;
-
-  return {
-    membershipId: row.id,
-    teamId: row.team_id,
-    teamName: team?.name ?? "",
-    teamLogo: team?.logo_path ?? null,
-    personId: person.id,
-    personName: person.name,
-    role: row.role,
-    status: row.status,
-    isNew: row.is_new,
-    rosterId: null,
-  };
 }

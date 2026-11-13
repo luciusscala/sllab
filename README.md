@@ -24,7 +24,7 @@ It started with, and is used daily by, the UC San Diego Men's Club Soccer team.
 ```
 supabase/          the database: migrations, access rules, seed data
 apps/
-  api/             platform logic and integrations (planned)
+  api/             platform API: SMS reminders today, at api.sllab.io
   web/             platform web app: team app, manager console, site editor (planned)
   club-sites/      club public sites; today, the UC San Diego site
   www/             sllab.io
@@ -50,7 +50,7 @@ Every app reads and writes one Supabase (Postgres) project.
 - **The platform API** handles anything that needs secrets or crosses accounts, such as SMS, invites and payments.
 - **The web apps** render pages from the same database.
 
-Today, the API's first two endpoints (captain unlock and SMS reminders) live in the club site. They move to `apps/api` as the platform grows; the write-up's roadmap covers the order.
+The API's first route, SMS reminders, serves the iOS app and the club site's team app alike. More move into it as the platform grows; the write-up's roadmap covers the order.
 
 ## Principles
 

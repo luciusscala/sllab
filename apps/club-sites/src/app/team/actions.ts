@@ -16,7 +16,7 @@ import { getCurrentSeason, getEvent } from "@/lib/data/team";
 import { sidesFor } from "@/lib/data/schedule";
 import { fromDateTimeLocal } from "@/lib/format";
 import { PENDING, clearPending, readPending, setPending } from "@/lib/pending";
-import { deliverReminder } from "@/lib/reminders";
+import { requestReminder } from "@/lib/reminders";
 import { supabaseUser } from "@/lib/supabase-server";
 import { teamRedirect } from "@/lib/team-path";
 
@@ -533,22 +533,23 @@ export async function deleteEvent(_state: ActionState, data: FormData): Promise<
 
 export type ReminderState = { error?: string; sent?: number; failed?: number } | null;
 
-/** The web composer's Send. The app reaches the same `deliverReminder` through `/api/reminders`. */
+/** The web composer's Send, through the same platform API the app uses. */
 export async function sendReminder(
   _state: ReminderState,
   data: FormData,
 ): Promise<ReminderState> {
   const membership = await requireStaff();
 
-  const rosterIds = data
-    .getAll("roster_id")
-    .filter((value): value is string => typeof value === "string");
+  const supabase = await supabaseUser();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { error: "Sign in again to send reminders." };
 
-  return deliverReminder(
-    membership.teamId,
-    rosterIds,
-    text(data, "message") ?? "",
-    membership.personId,
-    text(data, "event_id"),
-  );
+  return requestReminder(session.access_token, {
+    teamId: membership.teamId,
+    eventId: text(data, "event_id"),
+    rosterIds: data.getAll("roster_id").filter((value): value is string => typeof value === "string"),
+    message: text(data, "message") ?? "",
+  });
 }
