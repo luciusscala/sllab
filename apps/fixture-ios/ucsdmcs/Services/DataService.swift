@@ -202,19 +202,19 @@ final class DataService {
 
     /// Keep (true) or Remove (false) from the New Members list.
     func reviewMember(_ member: TeamMember, keep: Bool) async throws {
-        struct Params: Encodable { let p_membership_id: UUID; let p_keep: Bool }
+        nonisolated struct Params: Encodable, Sendable { let p_membership_id: UUID; let p_keep: Bool }
         try await memberRpc("review_member", params: Params(p_membership_id: member.id, p_keep: keep))
         if !keep, let seasonId = currentSeason?.id { await fetchRoster(seasonId: seasonId) }
     }
 
     func setStatus(_ status: MemberStatus, for member: TeamMember) async throws {
-        struct Params: Encodable { let p_membership_id: UUID; let p_status: String }
+        nonisolated struct Params: Encodable, Sendable { let p_membership_id: UUID; let p_status: String }
         try await memberRpc("set_member_status", params: Params(p_membership_id: member.id, p_status: status.rawValue))
     }
 
     /// Captains only.
     func setRole(_ role: Role, for member: TeamMember) async throws {
-        struct Params: Encodable { let p_membership_id: UUID; let p_role: String }
+        nonisolated struct Params: Encodable, Sendable { let p_membership_id: UUID; let p_role: String }
         try await memberRpc("set_member_role", params: Params(p_membership_id: member.id, p_role: role.rawValue))
         if let seasonId = currentSeason?.id { await fetchRoster(seasonId: seasonId) }
     }
