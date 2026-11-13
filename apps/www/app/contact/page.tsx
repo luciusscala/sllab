@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/ui";
 import { Magnetic } from "@/components/magnetic";
+import { CONTACT_EMAIL as EMAIL } from "@/lib/contact";
 
 export const metadata: Metadata = {
   description: "Get in touch",
 };
-
-const EMAIL = "lscala@ucsd.edu";
 
 const DETAILS = [
   { label: "Based in", value: "San Diego, California" },

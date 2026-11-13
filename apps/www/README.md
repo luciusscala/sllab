@@ -8,6 +8,7 @@ Built with Next.js 16, React 19 and Tailwind CSS 4. It has no backend and no env
 
 - **Home** (`/`): the headline and a link to get in touch.
 - **Contact** (`/contact`): email, location, and how early access works.
+- **Fixture's policies** (`/fixture/privacy`, `/fixture/terms`, `/fixture/support`): the privacy policy, terms and support page for [Fixture by SLLAB](../fixture-ios), linked from the App Store listing and from club sites.
 
 The site has light and dark themes with a toggle, scroll-triggered reveal animations, and transitions between pages.
 
@@ -23,7 +24,7 @@ npm run dev    # http://localhost:3000
 ```
 app/          Pages, layout and global styles
 components/   Theme toggle, reveal animations, page transitions, footer, shared UI
-lib/          Theme handling
+lib/          Theme handling and the contact address
 ```
 
 ## AI Disclosure
