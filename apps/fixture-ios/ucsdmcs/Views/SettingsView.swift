@@ -34,6 +34,9 @@ struct SettingsView: View {
                 if membership.role != .guest {
                     profileSection
                 }
+                if session.current?.isCaptain == true {
+                    playerViewSection
+                }
                 if !otherTeams.isEmpty {
                     switchSection
                 }
@@ -145,6 +148,23 @@ struct SettingsView: View {
             Text("Profile")
         } footer: {
             Text("Ask a captain to change your name or number.")
+        }
+    }
+
+    // MARK: - Player view
+
+    /// Shown from the captain's real membership, so it stays reachable while
+    /// the rest of the app is drawn as a player's.
+    private var playerViewSection: some View {
+        Section {
+            Toggle("View as Player", isOn: Binding(
+                get: { session.isViewingAsPlayer },
+                set: { session.isViewingAsPlayer = $0 }
+            ))
+        } footer: {
+            Text(session.isViewingAsPlayer
+                 ? "You're seeing the app as players do. Your captain tools come back when you turn this off."
+                 : "See the schedule and settings the way players do, without the captain tools.")
         }
     }
 

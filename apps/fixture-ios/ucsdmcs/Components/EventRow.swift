@@ -2,8 +2,6 @@ import SwiftUI
 
 struct EventRow: View {
     let item: EventWithAvailability
-    var isSelecting: Bool = false
-    var isSelected: Bool = false
     /// False for someone who can't respond (a guest, a coach): no status
     /// column at all rather than an empty one.
     var showsResponse: Bool = true
@@ -11,11 +9,6 @@ struct EventRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            if isSelecting {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.3))
-            }
             // Leading indicator: logo for games, color bar for others
             if item.event.eventType == "game", let logoURL = item.opponentLogoURL {
                 AsyncImage(url: logoURL) { image in

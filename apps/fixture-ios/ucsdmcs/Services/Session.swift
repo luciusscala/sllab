@@ -33,6 +33,17 @@ final class Session {
 
     var left: [Membership] { memberships.filter { $0.status == .inactive } }
 
+    /// A captain looking at the app the way players see it, from Settings.
+    /// Not saved: every launch starts in their own view.
+    var isViewingAsPlayer = false
+
+    /// The membership the screens are drawn for: `current`, as a player
+    /// while a captain is viewing as one.
+    var displayed: Membership? {
+        guard let current else { return nil }
+        return isViewingAsPlayer && current.isCaptain ? current.asPlayer() : current
+    }
+
     // MARK: - Lifecycle
 
     /// Follows the auth session for the life of the app. The first event
@@ -60,6 +71,7 @@ final class Session {
 
     private func clear() {
         memberships = []
+        isViewingAsPlayer = false
         phone = nil
         isAnonymous = false
         state = .signedOut
@@ -74,6 +86,7 @@ final class Session {
     }
 
     func select(teamId: UUID) {
+        isViewingAsPlayer = false
         UserDefaults.standard.set(teamId.uuidString, forKey: Self.teamKey)
     }
 

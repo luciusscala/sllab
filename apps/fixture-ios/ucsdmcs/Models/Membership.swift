@@ -58,6 +58,17 @@ struct Membership: Identifiable, Codable, Hashable {
     /// A returning player not yet on this season's roster: ask them.
     var needsSeasonAnswer: Bool { role.isOnRoster && status == .active && rosterId == nil }
 
+    /// The same place on the team with a player's role, for a captain
+    /// checking what players see. Only the app's view changes; the database
+    /// still knows them as a captain.
+    func asPlayer() -> Membership {
+        Membership(
+            membershipId: membershipId, teamId: teamId, teamName: teamName, teamLogo: teamLogo,
+            personId: personId, personName: personName, role: .player, status: status,
+            isNew: isNew, rosterId: rosterId
+        )
+    }
+
     enum CodingKeys: String, CodingKey {
         case role, status
         case membershipId = "membership_id"

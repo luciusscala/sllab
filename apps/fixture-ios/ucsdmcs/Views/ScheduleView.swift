@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ScheduleView: View {
     let membership: Membership
+    /// Bumped each time the Schedule tab is tapped while already showing:
+    /// back to the list if an event is open, else scroll to today.
+    var tabReselections = 0
     @Environment(DataService.self) private var dataService
     @Environment(DeepLinkManager.self) private var deepLinkManager
     @Environment(Session.self) private var session
@@ -13,6 +16,7 @@ struct ScheduleView: View {
     @State private var isAnsweringSeason = false
 
     @State private var hasScrolledToToday = false
+    @State private var scrollToTodayRequests = 0
 
     // Scroll effects
     @State private var listFrame: CGRect = .zero
@@ -32,8 +36,12 @@ struct ScheduleView: View {
 
     private var canSelect: Bool { rosterID != nil || membership.isStaff }
 
+    /// What Select All picks: upcoming events, the ones that can be
+    /// selected. Past events stay in the list but can't be answered or
+    /// cleared in bulk.
     private var allEventIDs: Set<UUID> {
-        Set(groupedEvents.flatMap { $0.events.map(\.event.id) })
+        let today = Calendar.current.startOfDay(for: Date())
+        return Set(groupedEvents.filter { $0.date >= today }.flatMap { $0.events.map(\.event.id) })
     }
 
     private var allSelected: Bool {
@@ -73,7 +81,7 @@ struct ScheduleView: View {
                     seasonPrompt
                 }
             }
-            .navigationTitle(membership.teamName)
+            .navigationTitle("Schedule")
             .navigationDestination(for: UUID.self) { eventID in
                 EventDetailView(eventID: eventID, membership: membership)
             }
@@ -179,6 +187,13 @@ struct ScheduleView: View {
             }
             // Saying yes to the season adds a roster row; fetch it so
             // responses can be made against it.
+            .onChange(of: tabReselections) { _, _ in
+                if navigationPath.isEmpty {
+                    scrollToTodayRequests += 1
+                } else {
+                    navigationPath = NavigationPath()
+                }
+            }
             .onChange(of: membership.rosterId) { _, _ in
                 Task {
                     if let season = dataService.currentSeason {
@@ -243,21 +258,17 @@ struct ScheduleView: View {
 
     private var eventList: some View {
         ScrollViewReader { proxy in
-            List {
+            // Selection is the list's own edit mode, so the checkmarks and
+            // taps are the system's rather than a button in every row.
+            List(selection: isSelecting ? $selectedEventIDs : nil) {
                 ForEach(groupedEvents, id: \.date) { group in
                     let isPast = group.date < Calendar.current.startOfDay(for: Date())
                     Section {
                         ForEach(group.events) { item in
-                            Group {
-                                if isPast {
-                                    NavigationLink(value: item.event.id) {
-                                        EventRow(item: item, showsResponse: rosterID != nil)
-                                    }
-                                } else {
-                                    eventCell(for: item)
-                                }
-                            }
-                            .modifier(ScrollEdgeEffect(visibleFrame: listFrame))
+                            eventCell(for: item, isPast: isPast)
+                                .tag(item.event.id)
+                                .selectionDisabled(isPast)
+                                .modifier(ScrollEdgeEffect(visibleFrame: listFrame))
                         }
 
                     } header: {
@@ -268,6 +279,7 @@ struct ScheduleView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .environment(\.editMode, .constant(isSelecting ? .active : .inactive))
             .onGeometryChange(for: CGRect.self) { geometry in
                 geometry.frame(in: .global)
             } action: { frame in
@@ -281,6 +293,9 @@ struct ScheduleView: View {
                     scrollToTodayIfNeeded(proxy: proxy)
                 }
             }
+            .onChange(of: scrollToTodayRequests) { _, _ in
+                scrollToToday(proxy: proxy)
+            }
             .overlay(alignment: .bottom) {
                 if isSelecting && !selectedEventIDs.isEmpty {
                     bulkActionBar
@@ -293,20 +308,14 @@ struct ScheduleView: View {
     // MARK: - Event Cell
 
     @ViewBuilder
-    private func eventCell(for item: EventWithAvailability) -> some View {
+    private func eventCell(for item: EventWithAvailability, isPast: Bool) -> some View {
         if isSelecting {
-            Button {
-                toggleSelection(item.event.id)
-            } label: {
-                EventRow(
-                    item: item,
-                    isSelecting: true,
-                    isSelected: selectedEventIDs.contains(item.event.id),
-                    showsResponse: rosterID != nil
-                )
-                .contentShape(Rectangle())
+            // No link while selecting: a tap selects the row instead.
+            EventRow(item: item, showsResponse: rosterID != nil)
+        } else if isPast {
+            NavigationLink(value: item.event.id) {
+                EventRow(item: item, showsResponse: rosterID != nil)
             }
-            .buttonStyle(.plain)
         } else if let rosterID {
             NavigationLink(value: item.event.id) {
                 EventRow(item: item) { status in
@@ -375,14 +384,6 @@ struct ScheduleView: View {
 
     // MARK: - Actions
 
-    private func toggleSelection(_ id: UUID) {
-        if selectedEventIDs.contains(id) {
-            selectedEventIDs.remove(id)
-        } else {
-            selectedEventIDs.insert(id)
-        }
-    }
-
     private func exitSelectionMode() {
         isSelecting = false
         selectedEventIDs.removeAll()
@@ -408,8 +409,16 @@ struct ScheduleView: View {
     }
 
     private func scrollToTodayIfNeeded(proxy: ScrollViewProxy) {
-        guard !hasScrolledToToday, let target = todaySectionDate else { return }
+        guard !hasScrolledToToday, todaySectionDate != nil else { return }
         hasScrolledToToday = true
+        scrollToToday(proxy: proxy)
+    }
+
+    /// Today's events, or the next day that has any. Deferred a beat so it
+    /// lands after the list's first layout, and after the tab bar's own
+    /// scroll-to-top when the tab is tapped again.
+    private func scrollToToday(proxy: ScrollViewProxy) {
+        guard let target = todaySectionDate else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             withAnimation {
                 proxy.scrollTo(target, anchor: .top)
