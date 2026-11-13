@@ -13,7 +13,7 @@ export type Season = {
  * Tables displayed a season at a time. `roster` carries `season_id` and
  * `team_id` itself; the rest reach both through the event they hang off.
  */
-export type SeasonScopedTable =
+type SeasonScopedTable =
   | "games"
   | "practices"
   | "social_events"
@@ -24,12 +24,8 @@ type SeasonRow = Season & { is_current: boolean };
 
 type Client = NonNullable<typeof supabase>;
 
-/**
- * Ids of every season a table has rows for, for one team. Takes the client as
- * an argument so the admin, which resolves its season the same way, can run it
- * with its own write client.
- */
-export async function populatedSeasons(
+/** Ids of every season a table has rows for, for one team. */
+async function populatedSeasons(
   client: Client,
   table: SeasonScopedTable,
   teamId: string,

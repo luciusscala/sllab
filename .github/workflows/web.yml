@@ -3,9 +3,9 @@ name: web
 on:
   push:
     branches: [main]
-    paths: ["apps/club-sites/**", "apps/www/**", ".github/workflows/web.yml"]
+    paths: ["apps/web/**", "apps/club-sites/**", "apps/www/**", ".github/workflows/web.yml"]
   pull_request:
-    paths: ["apps/club-sites/**", "apps/www/**", ".github/workflows/web.yml"]
+    paths: ["apps/web/**", "apps/club-sites/**", "apps/www/**", ".github/workflows/web.yml"]
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [club-sites, www]
+        app: [web, club-sites, www]
     defaults:
       run:
         working-directory: apps/${{ matrix.app }}

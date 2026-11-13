@@ -1,6 +1,6 @@
 # Club Sites by SLLAB
 
-The public websites for clubs on SLLAB. Today this is one site, UCSDMCS by SLLAB at [ucsdmcs.com](https://www.ucsdmcs.com), for the UC San Diego Men's Club Soccer team. It also holds two pieces of the platform that will move out: the web version of [Fixture by SLLAB](../fixture-ios) and the club's admin dashboard.
+The public websites for clubs on SLLAB. Today this is one site, UCSDMCS by SLLAB at [ucsdmcs.com](https://www.ucsdmcs.com), for the UC San Diego Men's Club Soccer team. It only reads public data; the team app and the admin dashboard are [Fixture by SLLAB](../web) at [app.sllab.io](https://app.sllab.io).
 
 It's part of [SLLAB](../../README.md). It's built with Next.js 16, React 19 and Tailwind CSS 4.
 
@@ -14,33 +14,24 @@ It's part of [SLLAB](../../README.md). It's built with Next.js 16, React 19 and 
 - **Standings** for the league division, fetched from SportsEngine's public API and cached for a day.
 - **Roster**, by season, with number, position, class and hometown.
 - **Tryouts**: dates, times, location, what to bring, and the registration form with a QR code.
-- **Club information**: the club's description, accolades and officers on the home page, a support page, and the privacy policy and terms the App Store requires. Contact, FAQ and donation pages are placeholders for now.
+- **Club information**: the club's description, accolades and officers on the home page. Contact, FAQ and donation pages are placeholders for now. The footer links to Fixture's support, privacy and terms pages on [sllab.io](https://sllab.io/fixture/support).
 
-**The team app** (`/team`, or `app.ucsdmcs.com`). Everything Fixture does on iOS, on the web: joining, the schedule, availability, and for captains and coaches, creating events, managing members and sending SMS reminders.
+Every database read is cached for five minutes (`src/lib/data/cache.ts`), so most visits never touch the database. Games and rosters are edited in Fixture, a separate deployment, so a change takes up to five minutes to show here.
 
-**The admin dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Open to the club team's captains and coaches, with the same sign-in as the team app. Public pages are cached until the dashboard changes something, so most visits never touch the database.
+**Redirects** (`src/proxy.ts`). Fixture used to live on this site, and old links still work: `app.ucsdmcs.com`, `/team` and `/admin` go to the same page on app.sllab.io, and `/privacy`, `/terms` and `/support` go to sllab.io/fixture.
 
-**The universal-link file** at `/.well-known/apple-app-site-association`, which lets event links open in Fixture.
-
-## Accounts
-
-People sign in with their phone number (Supabase Auth texts a code), or as guests with only the team code. Each person has one membership per team with a role — guest, player, captain or coach — and a status. The roles and what each may do are set out in [`supabase/README.md`](../../supabase/README.md).
-
-On the web the session lives in Supabase's auth cookies, shared between the club site and the app subdomain when `APP_HOST` is set. Pages and Server Actions read it through `src/lib/auth.ts` (`requireMember`, `requireStaff`, `requireCaptain`, `requireAdmin`) and query the database as the signed-in person, so row-level security decides what they see; the guards only turn a refusal into a redirect. The admin dashboard is the exception: it writes with the secret key, behind `requireAdmin()`, because it edits tables (opponent teams, fields) that no policy opens.
-
-Phone numbers never reach the browser. The reminder composer sends roster ids to the [platform API](../api) with the signed-in person's access token, the same call the iOS app makes; the API checks they're staff, looks the numbers up, texts only active members who ticked the box, and caps a team at ten reminders a day.
+**The universal-link file** at `/.well-known/apple-app-site-association`. Reminder texts used to link to app.ucsdmcs.com, and the iOS app still claims that domain, so those links open in the app.
 
 ## Requirements
 
 - Node.js 20.9 or later
 - A Supabase project
-- For sending reminders, the [platform API](../api) (production's is used by default)
 
 ## Getting started
 
 1. Run `npm ci` in this folder.
 2. Copy `.env.local.example` to `.env.local` and fill in the values. Each one is explained in the file.
-3. Run `npm run dev` and open [localhost:3000](http://localhost:3000). The team app is at `localhost:3000/team` or `app.localhost:3000`.
+3. Run `npm run dev` and open [localhost:3000](http://localhost:3000).
 
 The site builds without a `.env.local`; pages that need data render empty instead of failing.
 
@@ -48,10 +39,10 @@ The site builds without a `.env.local`; pages that need data render empty instea
 
 ```
 src/
-├── app/          Pages and routes: admin/ the dashboard, team/ the team app
-├── components/   UI pieces; admin/ and team/ hold section-specific ones
-├── lib/          Supabase clients (per-person and admin), auth, the API client, formatting; data/ holds all data access
-└── proxy.ts      Serves the team app from the app. subdomain
+├── app/          Pages and routes
+├── components/   UI pieces
+├── lib/          The Supabase client, club details, formatting; data/ holds all data access
+└── proxy.ts      Redirects for Fixture's old addresses
 public/           Static images and logos
 ```
 
@@ -61,11 +52,10 @@ The package is still named `ucsdmcsc-website`, from its former repository.
 
 - **Supabase** stores the club's data and hosts team crests in Storage.
 - **SportsEngine** provides league standings.
-- **The [platform API](../api)** (`api.sllab.io`) sends SMS reminders.
 
 ## Where this is going
 
-This folder becomes one deployment that serves every club's public site, picking the club from the domain and rendering pages from data instead of code. The team app and admin dashboard move to the platform web app in [`apps/web`](../web). The [write-up](../../docs/writeup/sllab.pdf) covers the plan.
+This folder becomes one deployment that serves every club's public site, picking the club from the domain and rendering pages from data instead of code. The [write-up](../../docs/writeup/sllab.pdf) covers the plan.
 
 ## AI Disclosure
 

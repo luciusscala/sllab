@@ -107,10 +107,8 @@ export const abbreviateClass = (year: string) =>
  * by seniority — sorting either alphabetically would produce a meaningless
  * order ("D, F, GK, MF"). Unknown values rank last rather than disappearing.
  */
-export const POSITIONS = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
-export const CLASSES = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
-const POSITION_ORDER = POSITIONS;
-const CLASS_ORDER = CLASSES;
+const POSITION_ORDER = ["Goalkeeper", "Defender", "Midfielder", "Forward"];
+const CLASS_ORDER = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
 
 const rankIn = (order: string[], value: string) => {
   const index = order.indexOf(value);

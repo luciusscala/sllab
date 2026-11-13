@@ -13,10 +13,11 @@ It started with, and is used daily by, the UC San Diego Men's Club Soccer team.
 | | Status | What it does |
 |---|---|---|
 | **[Fixture by SLLAB](apps/fixture-ios)** (iOS) | [On the App Store](https://apps.apple.com/us/app/fixture-management/id6812923949) | Players see the schedule and mark availability. Captains create events, track attendance, and text reminders. |
+| **[Fixture by SLLAB](apps/web)** (web) | At [app.sllab.io](https://app.sllab.io) | Fixture in the browser, plus an admin dashboard for each team's season data. |
 | **[Film by SLLAB](apps/film-ios)** (iOS) | Working prototype | Records games on a phone mounted on a motorized base that follows play using on-device detection. |
 | **[Hardware by SLLAB](hardware)** | Working prototype | ESP32 firmware, a custom PCB, and 3D-printed parts for Film's pan base. |
-| **[UCSDMCS by SLLAB](apps/club-sites)** (web) | Live at [ucsdmcs.com](https://www.ucsdmcs.com) | Public schedule, scores, standings, roster and tryouts, plus a web version of Fixture and an admin dashboard. |
-| **[sllab.io](apps/www)** (web) | Live | The project's own site. |
+| **[UCSDMCS by SLLAB](apps/club-sites)** (web) | Live at [ucsdmcs.com](https://www.ucsdmcs.com) | Public schedule, scores, standings, roster and tryouts. |
+| **[sllab.io](apps/www)** (web) | Live | The project's own site, and Fixture's privacy policy, terms and support pages. |
 | **[Detection model](ml)** | In progress | Training and Core ML export for Film's detector. |
 
 ## Layout
@@ -25,7 +26,7 @@ It started with, and is used daily by, the UC San Diego Men's Club Soccer team.
 supabase/          the database: migrations, access rules, seed data
 apps/
   api/             platform API: SMS reminders today, at api.sllab.io
-  web/             platform web app: team app, manager console, site editor (planned)
+  web/             Fixture on the web and the admin dashboard, at app.sllab.io
   club-sites/      club public sites; today, the UC San Diego site
   www/             sllab.io
   fixture-ios/     Fixture
@@ -50,7 +51,7 @@ Every app reads and writes one Supabase (Postgres) project.
 - **The platform API** handles anything that needs secrets or crosses accounts, such as SMS, invites and payments.
 - **The web apps** render pages from the same database.
 
-The API's first route, SMS reminders, serves the iOS app and the club site's team app alike. More move into it as the platform grows; the write-up's roadmap covers the order.
+The API's first route, SMS reminders, serves Fixture on iOS and on the web alike. More move into it as the platform grows; the write-up's roadmap covers the order.
 
 ## Principles
 

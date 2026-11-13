@@ -16,7 +16,10 @@ export function SiteFooter() {
             Diego
           </p>
 
-          {/* Links and icon buttons carry inner padding, so the row is pulled
+          {/* Support, Privacy, Terms and Team belong to Fixture, the team app
+              the club uses, and live on SLLAB's domains.
+
+              Links and icon buttons carry inner padding, so the row is pulled
               out by that much to hang off the same edge as the two lines
               above it. */}
           <div className="-mx-2 mt-3 flex items-center gap-1">
@@ -32,30 +35,30 @@ export function SiteFooter() {
             >
               FAQ
             </Link>
-            <Link
-              href="/support"
+            <a
+              href="https://sllab.io/fixture/support"
               className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
             >
               Support
-            </Link>
-            <Link
-              href="/privacy"
+            </a>
+            <a
+              href="https://sllab.io/fixture/privacy"
               className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
             >
               Privacy
-            </Link>
-            <Link
-              href="/terms"
+            </a>
+            <a
+              href="https://sllab.io/fixture/terms"
               className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
             >
               Terms
-            </Link>
-            <Link
-              href="/team"
+            </a>
+            <a
+              href="https://app.sllab.io"
               className="rounded-md px-2 py-1 text-sm text-white/70 transition hover:text-white"
             >
               Team
-            </Link>
+            </a>
 
             <span aria-hidden="true" className="mx-2 h-4 w-px bg-white/20" />
 

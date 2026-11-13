@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Fixture by SLLAB on the web — design system
+   Carried over from the UC San Diego club site, where the team app started;
+   the palette is UC San Diego's until the platform has its own.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Brand */
+  --navy: #182b49; /* Pantone 2767 */
+  --blue: #00629b; /* Pantone 3015 */
+  --yellow: #ffcd00; /* Pantone 116 */
+
+  /* Neutrals derived from navy so greys stay in family */
+  --background: #ffffff;
+  --surface: #f6f7f9;
+  --foreground: var(--navy);
+  --muted: #5a6b82;
+  --border: #e3e7ed;
+  --border-strong: #cbd3de;
+
+  /* Availability, matching the iOS app's asset colours (system green/red). */
+  --going: #34c758;
+  --not-going: #ff3b30;
+}
+
+@theme static inline {
+  --color-navy: var(--navy);
+  --color-blue: var(--blue);
+  --color-yellow: var(--yellow);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-going: var(--going);
+  --color-not-going: var(--not-going);
+  
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The page ground is navy; white cards restore the light palette locally,
+   which is why the tokens above stay light rather than being inverted. */
+body {
+  background: var(--navy);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Most visits are on a phone, where the browser's own grey tap flash fires on
+   every link and reads as a rendering glitch against the brand colours. The
+   `active:` states on buttons and rows replace it with feedback we control. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--yellow);
+  color: var(--navy);
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* Anything that moves on this site is decoration on top of a state change the
+   user already asked for, so honouring the setting costs nothing: the menu
+   still opens, it just stops travelling to get there. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- Reusable primitives -------------------------------------------------- */
+
+@utility container-page {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+/* Headings. One typeface throughout: hierarchy comes from weight and size,
+   not from caps or a condensed face. The slight negative tracking keeps large
+   sizes from looking loose. */
+@utility headline {
+  font-weight: 600;
+  letter-spacing: -0.021em;
+  line-height: 1.15;
+}
+
+/* Form control. One radius, one border, one padding step, reused everywhere
+   an admin field appears. */
+@utility field {
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-strong);
+  background: #ffffff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--foreground);
+}
+
+@utility field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
