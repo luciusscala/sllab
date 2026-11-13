@@ -11,7 +11,6 @@ here as migrations and pushed, never edited by hand in the dashboard.
 ```
 config.toml        Auth, API and local-stack settings; pushed with `config push`
 migrations/        The schema, oldest first. The first file is the live baseline.
-cutover/           A migration held back on purpose; see "Cutover" below
 ```
 
 ## Accounts
@@ -93,19 +92,12 @@ npx supabase@3.1.0 db dump --remote --data-only -f backup/data.sql
 
 ## Cutover
 
-The accounts migrations are additive: the new tables, functions and policies sit
-alongside the original open policies, so the App Store build keeps working while
-players update. `cutover/` holds the migration that ends that window. It drops the
-open policies and the columns that moved (`people.phone`, `teams.team_code`,
+The accounts migrations were additive: the new tables, functions and policies sat
+alongside the original open policies, so the App Store build kept working while the
+accounts release rolled out. `20261201000000_lock_down.sql` ended that window. It drops
+the open policies and the columns that moved (`people.phone`, `teams.team_code`,
 `teams.admin_code`), and trims the API roles' table privileges to what the policies
-allow.
-
-When every client is on the accounts release:
-
-1. Raise `app_config.min_version` so older builds show the update screen.
-2. `git mv cutover/<file>.sql migrations/` and `db push --remote`.
-
-Until then it must stay out of `migrations/`, or `db push` would apply it.
+allow. Builds from before the accounts release no longer work against this schema.
 
 ## AI Disclosure
 

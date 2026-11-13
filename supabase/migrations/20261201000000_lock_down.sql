@@ -1,21 +1,29 @@
--- Cutover: close the open policies the App Store build relied on, and drop
--- the columns that moved to the private tables.
---
--- Run this once every client is on the accounts release and `app_config.
--- min_version` has been raised so older builds show the update screen. Move
--- it into migrations/ (keeping its timestamp later than the accounts ones)
--- and `db push --remote`. Until then it must NOT be in migrations/.
+-- Cutover: close the open policies the pre-accounts App Store build relied on,
+-- and drop the columns that moved to the private tables. Builds older than the
+-- accounts release stop working once this is applied.
 
--- Anything written to the old columns during the window.
-INSERT INTO public.people_contacts (person_id, phone, sms_consent)
-SELECT id, public.normalize_phone(phone), true
-FROM public.people
-WHERE public.normalize_phone(phone) ~ '^[1-9][0-9]{7,14}$'
-ON CONFLICT (phone) DO NOTHING;
+-- Anything written to the old columns during the window. Those columns were
+-- writable by anyone, so only gaps are filled: a person who already has a
+-- contact keeps it, and a team keeps its code. A number added here could have
+-- been put there by someone else, so the person's memberships are flagged new
+-- and a captain confirms them when that number signs in.
+WITH added AS (
+  INSERT INTO public.people_contacts (person_id, phone, sms_consent)
+  SELECT p.id, public.normalize_phone(p.phone), true
+  FROM public.people p
+  WHERE public.normalize_phone(p.phone) ~ '^[1-9][0-9]{7,14}$'
+    AND NOT EXISTS (SELECT 1 FROM public.people_contacts c WHERE c.person_id = p.id)
+  ON CONFLICT DO NOTHING
+  RETURNING person_id
+)
+UPDATE public.memberships m
+SET is_new = true
+FROM added
+WHERE m.person_id = added.person_id;
 
 INSERT INTO public.team_secrets (team_id, team_code)
 SELECT id, lower(team_code) FROM public.teams WHERE team_code IS NOT NULL
-ON CONFLICT (team_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- The columns themselves.
 ALTER TABLE public.people DROP COLUMN phone;
