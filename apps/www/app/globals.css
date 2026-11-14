@@ -203,6 +203,105 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Platform graphic
+   -------------------------------------------------------------------------- */
+
+.pg-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
+.pg-edge {
+  transition: stroke 500ms var(--ease-smooth), stroke-width 500ms var(--ease-smooth);
+}
+
+.pg-node-box {
+  stroke: var(--line);
+  transition: stroke 500ms var(--ease-smooth);
+}
+
+.pg-node-icon-bg {
+  fill: color-mix(in srgb, var(--fg) 5%, transparent);
+  transition: fill 500ms var(--ease-smooth);
+}
+
+.pg-node {
+  opacity: 0.55;
+  transition: opacity 600ms var(--ease-smooth);
+}
+
+.pg-node-lit {
+  opacity: 1;
+}
+
+.pg-node-lit .pg-node-box {
+  stroke: var(--fg);
+}
+
+.pg-node-lit .pg-node-icon-bg {
+  fill: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.pg-core-sub {
+  fill: color-mix(in srgb, var(--bg) 62%, transparent);
+}
+
+/* Arrival: the outline swells and fades. */
+.pg-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pg-ripple 900ms var(--ease-smooth) forwards;
+}
+
+@keyframes pg-ripple {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+/* The dashes march around the core; the ellipse itself stays put. */
+.pg-orbit {
+  animation: pg-orbit 6s linear infinite;
+}
+
+@keyframes pg-orbit {
+  to {
+    stroke-dashoffset: -90;
+  }
+}
+
+.pg-progress {
+  width: 100%;
+  transform-origin: left;
+  animation: pg-progress linear forwards;
+}
+
+@keyframes pg-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.pg-caption {
+  animation: pg-caption 700ms var(--ease-smooth) both;
+}
+
+@keyframes pg-caption {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+}
+
+/* --------------------------------------------------------------------------
    Reduced motion
    -------------------------------------------------------------------------- */
 

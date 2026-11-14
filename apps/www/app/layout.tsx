@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "sllab: Sports Logic Lab", template: "%s · sllab" },
   description:
-    "SLLAB gives college club teams what a staffed program has: Fixture for schedules and availability, a club site that keeps itself current, and film of every game.",
+    "The all-in-one platform for club sports: schedules, availability, reminders, a public site and game film for college club teams.",
 };
 
 export const viewport: Viewport = {

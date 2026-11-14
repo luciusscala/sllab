@@ -6,9 +6,8 @@ Built with Next.js 16, React 19 and Tailwind CSS 4. It has no backend and no env
 
 ## Pages
 
-- **Home** (`/`): what SLLAB is: the problem, the four products (Fixture, club sites, Film, the hardware), how they fit together, the roadmap, and how to get a team on. Screenshots and photos are placeholders (`MediaPlaceholder`) until the real media is added.
-- **Contact** (`/contact`): email, location, and how early access works.
-- **Fixture's policies** (`/fixture/privacy`, `/fixture/terms`, `/fixture/support`): the privacy policy, terms and support page for [Fixture by SLLAB](../fixture-ios), linked from the App Store listing and from club sites.
+- **Home** (`/`): the whole site. A hero, then an animated diagram of how SLLAB's pieces work together (`components/platform-graphic.tsx`): a six-step story of one game moving from a captain's Fixture through the platform to players, the club site, text reminders and Film. It is hand-written SVG driven by one `requestAnimationFrame` loop, with a taller layout for phones and a still, click-through version for reduced motion. `/contact` redirects here.
+- **Fixture's policies** (`/fixture/privacy`, `/fixture/terms`, `/fixture/support`): the privacy policy, terms and support page for [Fixture by SLLAB](../fixture-ios), linked from the App Store listing and from club sites. They stay because Apple requires them.
 
 The site has light and dark themes with a toggle, scroll-triggered reveal animations, and transitions between pages.
 
@@ -23,7 +22,7 @@ npm run dev    # http://localhost:3000
 
 ```
 app/          Pages, layout and global styles
-components/   home/ the home page's sections; theme toggle, reveal animations, page transitions, header, footer, shared UI
+components/   The platform graphic, theme toggle, reveal animations, page transitions, header, footer, shared UI
 lib/          Theme handling and the contact address
 ```
 
