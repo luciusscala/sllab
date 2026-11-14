@@ -28,7 +28,7 @@ struct ScheduleView: View {
     @State private var isBulkActionLoading = false
 
     /// This person's roster row, when they may answer for it. Nil for guests,
-    /// coaches, anyone away, and a returning player who hasn't said they're
+    /// coaches, and a returning player who hasn't said they're
     /// back this season.
     private var rosterID: UUID? {
         membership.canRespond ? membership.rosterId : nil
@@ -247,7 +247,8 @@ struct ScheduleView: View {
             if playing {
                 try await session.continueSeason()
             } else {
-                try await session.setMyStatus(.away, membership: membership)
+                // Same as Leave Team: off the lists until they rejoin.
+                try await session.setMyStatus(.inactive, membership: membership)
             }
         } catch {
             seasonError = Session.explain(error)

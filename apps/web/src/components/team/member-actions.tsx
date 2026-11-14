@@ -12,9 +12,9 @@ const BUTTON =
   "rounded-md border border-border-strong px-2.5 py-1 text-xs font-medium transition hover:bg-surface-raised disabled:opacity-50";
 
 /**
- * The controls beside one member: mark away or active, remove, and (for
- * captains) change role. Each is a tiny form posting to the matching
- * database function; the error from the last one shows beneath.
+ * The controls beside one member: remove or reactivate, and (for captains)
+ * change role. Each is a tiny form posting to the matching database
+ * function; the error from the last one shows beneath.
  */
 export function MemberActions({
   member,
@@ -32,7 +32,7 @@ export function MemberActions({
   const [roleState, roleAction, rolePending] = useActionState(setRole, null);
   const error = statusState?.error ?? roleState?.error;
 
-  const statusButton = (status: "active" | "away" | "inactive", label: string, confirmText?: string) => (
+  const statusButton = (status: "active" | "inactive", label: string, confirmText?: string) => (
     <form action={statusAction} className="inline">
       <input type="hidden" name="membership_id" value={member.membershipId} />
       <input type="hidden" name="status" value={status} />
@@ -52,10 +52,13 @@ export function MemberActions({
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex flex-wrap items-center gap-2">
-        {member.status === "away"
-          ? statusButton("active", "Mark active")
-          : statusButton("away", "Mark away")}
-        {statusButton("inactive", "Remove", `Remove ${member.name} from the team?`)}
+        {member.status === "inactive"
+          ? statusButton("active", "Reactivate")
+          : statusButton(
+              "inactive",
+              "Remove",
+              `Remove ${member.name}? They stay on the roster but stop getting reminders and drop off the response lists.`,
+            )}
 
         {roles.length > 0 && (
           <form action={roleAction} className="inline">

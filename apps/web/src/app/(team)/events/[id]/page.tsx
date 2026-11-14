@@ -37,7 +37,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
   ]);
   if (!event) notFound();
 
-  // The active roster: a player marked away is neither listed nor counted
+  // The active roster: a player who left is neither listed nor counted
   // as "No Response". Their earlier answers simply aren't shown.
   const [roster, availability] = await Promise.all([
     season ? getActiveRoster(season.id, membership.teamId) : [],

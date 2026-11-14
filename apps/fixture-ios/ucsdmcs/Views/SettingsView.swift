@@ -7,7 +7,6 @@ struct SettingsView: View {
     @State private var editingHometown = ""
     @State private var isWorking = false
     @State private var showLeaveConfirm = false
-    @State private var showDeleteConfirm = false
     @State private var errorMessage: String?
     @FocusState private var isHometownFocused: Bool
 
@@ -42,7 +41,7 @@ struct SettingsView: View {
                         switchSection
                     }
                     accountSection
-                    dangerSection
+                    leaveSection
                 }
                 .listRowBackground(AppTheme.surface)
             }
@@ -56,13 +55,6 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("You'll stop getting reminders and drop off the response lists. You can rejoin with the team code any time.")
-            }
-            .confirmationDialog("Delete your account?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-                Button("Delete Account", role: .destructive) {
-                    Task { await run { try await session.deleteAccount() } }
-                }
-            } message: {
-                Text("This removes your phone number and sign-in from every team. Past roster and attendance records are kept. This can't be undone.")
             }
             .alert("Couldn't Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
                 Button("OK", role: .cancel) {}
@@ -78,42 +70,9 @@ struct SettingsView: View {
     // MARK: - Team
 
     private var teamSection: some View {
-        Section {
+        Section("Team") {
             row("Team", membership.teamName)
             row("Role", membership.role.label)
-            if membership.status == .away {
-                HStack {
-                    Text("Status")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("Away")
-                        .foregroundStyle(.tertiary)
-                }
-                Button("I'm back") {
-                    Task {
-                        await run {
-                            if membership.role.isOnRoster {
-                                try await session.continueSeason()
-                            } else {
-                                try await session.setMyStatus(.active, membership: membership)
-                            }
-                        }
-                    }
-                }
-            } else if membership.role.isOnRoster {
-                Button("Take a break") {
-                    Task { await run { try await session.setMyStatus(.away, membership: membership) } }
-                }
-                .neutralAction()
-            }
-        } header: {
-            Text("Team")
-        } footer: {
-            if membership.status == .away {
-                Text("While you're away you're left out of response lists and reminders.")
-            } else if membership.role.isOnRoster {
-                Text("Taking a break keeps your spot but pauses reminders and response lists until you're back.")
-            }
         }
     }
 
@@ -194,8 +153,9 @@ struct SettingsView: View {
 
     // MARK: - Account
 
-    /// Signing out is reversible and reads as a plain row. The accent is kept
-    /// for a guest's one real next step.
+    /// What's about the sign-in rather than the team. Signing out is an
+    /// ordinary row; deleting the account sits one screen down so the
+    /// irreversible thing isn't a row among reversible ones.
     private var accountSection: some View {
         Section {
             if membership.role == .guest {
@@ -210,29 +170,31 @@ struct SettingsView: View {
                 Task { await session.signOut() }
             }
             .neutralAction()
+
+            if !session.isAnonymous {
+                NavigationLink("Delete Account") {
+                    DeleteAccountView()
+                }
+            }
         } header: {
             Text("Account")
         } footer: {
             if session.isAnonymous {
                 Text("You're browsing as a guest.")
+            } else {
+                Text("Signing out only affects this phone. Your team and roster aren't touched.")
             }
         }
     }
 
-    /// The two things that take you off the team, together and last, in red.
-    private var dangerSection: some View {
+    /// The one thing on this screen that takes something away.
+    private var leaveSection: some View {
         Section {
             Button("Leave Team", role: .destructive) {
                 showLeaveConfirm = true
             }
-
-            if !session.isAnonymous {
-                Button("Delete Account", role: .destructive) {
-                    showDeleteConfirm = true
-                }
-            }
         } footer: {
-            Text("Leaving keeps your spot; you can rejoin with the team code. Deleting your account can't be undone.")
+            Text("You'll stay on this season's roster but stop getting reminders and drop off the response lists. Rejoin any time with the team code.")
         }
     }
 

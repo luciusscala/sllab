@@ -18,16 +18,16 @@ enum Role: String, Codable, Hashable, CaseIterable {
     var isOnRoster: Bool { self == .player || self == .captain }
 }
 
-/// Whether a member is around. A filter, never a response: someone away is
-/// left out of the response lists and reminders rather than shown as silent.
+/// Whether a member is on the team. A filter, never a response: someone
+/// inactive stays on the roster but is left out of the response lists,
+/// reminders and attendance rather than shown as silent.
 enum MemberStatus: String, Codable, Hashable {
-    case active, away, inactive
+    case active, inactive
 
     var label: String {
         switch self {
         case .active: return "Active"
-        case .away: return "Away"
-        case .inactive: return "Left"
+        case .inactive: return "Inactive"
         }
     }
 }

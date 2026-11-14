@@ -180,14 +180,14 @@ final class DataService {
         members.isEmpty ? nil : Set(members.filter { $0.status == .active }.map(\.personId))
     }
 
-    /// The roster less anyone away or gone: who is asked, listed and counted.
+    /// The roster less anyone who has left: who is asked, listed and counted.
     var activeRoster: [RosterEntry] {
         guard let active = activePersonIds else { return roster }
         return roster.filter { active.contains($0.personId) }
     }
 
-    /// `responses` for people who are still around. Someone away keeps their
-    /// answer in the database; it just isn't shown.
+    /// `responses` for people who are still on the team. Someone who left
+    /// keeps their answers in the database; they just aren't shown.
     func activeResponses(_ responses: [Availability]) -> [Availability] {
         let rosterIds = Set(activeRoster.map(\.id))
         return responses.filter { rosterIds.contains($0.rosterId) }

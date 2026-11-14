@@ -3,7 +3,7 @@ import Foundation
 /// When each member was active on the team, built from `membership_history`.
 /// Attendance counts an event against a player only if they were active when
 /// it happened: someone who joined in week six isn't marked absent for weeks
-/// one to five, and someone marked away isn't chased for events while away.
+/// one to five, and someone who left isn't chased for events after that.
 struct ActivePeriods {
     private struct Period { let start: Date; let end: Date? }
     private let periods: [UUID: [Period]]
@@ -22,7 +22,7 @@ struct ActivePeriods {
                 switch (change.status, open) {
                 case (.active, nil):
                     open = change.changedAt
-                case (.away, let start?), (.inactive, let start?):
+                case (.inactive, let start?):
                     list.append(Period(start: start, end: change.changedAt))
                     open = nil
                 default:

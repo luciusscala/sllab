@@ -4,7 +4,7 @@
  * roles and statuses.
  */
 export type Role = "guest" | "player" | "captain" | "coach";
-export type Status = "active" | "away" | "inactive";
+export type Status = "active" | "inactive";
 
 export const ROLE_LABEL: Record<Role, string> = {
   guest: "Guest",
@@ -15,6 +15,5 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 export const STATUS_LABEL: Record<Status, string> = {
   active: "Active",
-  away: "Away",
-  inactive: "Left",
+  inactive: "Inactive",
 };

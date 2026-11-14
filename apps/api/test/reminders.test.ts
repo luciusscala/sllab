@@ -82,7 +82,7 @@ describe("POST /v1/reminders", () => {
     ["someone not on the team", null],
     ["a player", { personId: "p", role: "player", status: "active" }],
     ["a guest", { personId: "p", role: "guest", status: "active" }],
-    ["a captain who is away", { personId: "p", role: "captain", status: "away" }],
+    ["a captain who left", { personId: "p", role: "captain", status: "inactive" }],
     ["a coach who left", { personId: "p", role: "coach", status: "inactive" }],
   ])("refuses %s", async (_label, member) => {
     const res = await app(fakeStore({ member }).store).request("/v1/reminders", post(valid));

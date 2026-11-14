@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Role = "guest" | "player" | "captain" | "coach";
-export type Status = "active" | "away" | "inactive";
+export type Status = "active" | "inactive";
 
 export type Member = { personId: string; role: Role; status: Status };
 
@@ -17,7 +17,7 @@ export interface ReminderStore {
   /**
    * The numbers to text for these roster rows: rows on this team only, so one
    * team's captain can't name another's players, and only people who are
-   * active and ticked the box. Status is a filter, so someone away isn't
+   * active and ticked the box. Status is a filter, so someone who left isn't
    * texted, and consent is the carriers' rule as much as ours.
    */
   recipients(teamId: string, rosterIds: string[]): Promise<string[]>;

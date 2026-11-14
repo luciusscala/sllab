@@ -33,7 +33,7 @@
   /* Meaning. Going is the accent: one green, one meaning. */
   --going: var(--accent);
   --not-going: #ff453a;
-  --warning: #ff9f0a; /* no response, away, errors worth a look */
+  --warning: #ff9f0a; /* no response, errors worth a look */
 
   /* Event types. Practices are most of the schedule and get no colour. */
   --game: #e0b034;

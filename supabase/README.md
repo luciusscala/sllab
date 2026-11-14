@@ -18,7 +18,8 @@ migrations/        The schema, oldest first. The first file is the live baseline
 People sign in with their phone number (a one-time code by SMS) or, as guests, with no
 sign-in at all beyond a team code. Each person has one account and one `memberships`
 row per team, with a **role** (`guest`, `player`, `captain`, `coach`) and a **status**
-(`active`, `away`, `inactive`). Every rule checks the membership on the specific team.
+(`active`, `inactive`). Inactive members stay on the roster but are left out of reminders,
+response lists and attendance. Every rule checks the membership on the specific team.
 
 What a client calls, all `SECURITY DEFINER` functions reachable through PostgREST's
 `rpc`:
@@ -29,7 +30,7 @@ What a client calls, all `SECURITY DEFINER` functions reachable through PostgRES
 | `join_team(code, name?, position?, class?, number?, sms_consent?)` | signed in | The whole join: guest, returning player by phone match, invited staff, or new player. Returns `needs_profile` when it needs the optional arguments |
 | `my_memberships()` | signed in | The caller's teams, roles and current roster rows |
 | `continue_season(team)` | player | "Yes, I'm playing this season": carries last season's roster row forward |
-| `set_member_status(membership, status)` | self, or staff | Leave, rejoin, mark away. Staff can't touch other staff; captains can |
+| `set_member_status(membership, status)` | self, or staff | Leave and rejoin; a captain's Remove and Reactivate. Staff can't touch other staff; captains can |
 | `set_member_role(membership, role)` | captain | Promote to captain, add or remove a coach |
 | `review_member(membership, keep)` | staff | The New Members list: Keep or Remove |
 | `invite_member(team, phone, role)` | staff (captains for staff roles) | Pre-add by number; the role applies when that number signs in |

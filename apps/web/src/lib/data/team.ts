@@ -126,10 +126,9 @@ export async function getRoster(seasonId: string, teamId: string): Promise<Membe
 }
 
 /**
- * Who answers for this season: the roster, less anyone whose membership is
- * away or gone. Status is a filter, never a response, so a player marked
- * away drops out of the response lists and reminders rather than showing
- * as "No Response".
+ * Who answers for this season: the roster, less anyone who has left. Status
+ * is a filter, never a response, so an inactive player drops out of the
+ * response lists and reminders rather than showing as "No Response".
  */
 export async function getActiveRoster(seasonId: string, teamId: string): Promise<Member[]> {
   const [roster, members] = await Promise.all([

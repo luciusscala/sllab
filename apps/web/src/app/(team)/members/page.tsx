@@ -53,6 +53,7 @@ export default async function MembersPage() {
   );
   const players = members.filter((m) => m.role === "player" && m.status !== "inactive" && !m.isNew);
   const guests = members.filter((m) => m.role === "guest" && m.status !== "inactive");
+  const inactive = members.filter((m) => m.role !== "guest" && m.status === "inactive");
   const quiet =
     recent.events >= QUIET_AFTER
       ? players.filter((m) => {
@@ -133,10 +134,7 @@ export default async function MembersPage() {
           <ul className="mt-3 divide-y divide-border">
             {players.map((m) => (
               <li key={m.membershipId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                <span>
-                  {label(m)}
-                  {m.status === "away" && <span className="ml-2 text-xs text-muted">Away</span>}
-                </span>
+                <span>{label(m)}</span>
                 <MemberActions
                   member={m}
                   roles={roleOptions}
@@ -152,8 +150,8 @@ export default async function MembersPage() {
           <>
             <SectionHeading>Haven&rsquo;t been around</SectionHeading>
             <p className="mt-2 text-xs text-muted">
-              No response to the last {recent.events} events. Mark them away, or remove them, so
-              the response lists reflect who&rsquo;s actually here.
+              No response to the last {recent.events} events. Removing them keeps them on the
+              roster but takes them out of the response lists and reminders.
             </p>
             <ul className="mt-3 divide-y divide-border">
               {quiet.map((m) => (
@@ -165,6 +163,32 @@ export default async function MembersPage() {
                     setStatus={setMemberStatus}
                     setRole={setMemberRole}
                   />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {inactive.length > 0 && (
+          <>
+            <SectionHeading>Inactive</SectionHeading>
+            <p className="mt-2 text-xs text-muted">
+              Off reminders and response lists, still on the roster.
+            </p>
+            <ul className="mt-3 divide-y divide-border">
+              {inactive.map((m) => (
+                <li key={m.membershipId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+                  <span className="text-muted">
+                    {label(m)} <span>· {ROLE_LABEL[m.role]}</span>
+                  </span>
+                  {(captain || (m.role !== "captain" && m.role !== "coach")) && (
+                    <MemberActions
+                      member={m}
+                      roles={[]}
+                      setStatus={setMemberStatus}
+                      setRole={setMemberRole}
+                    />
+                  )}
                 </li>
               ))}
             </ul>

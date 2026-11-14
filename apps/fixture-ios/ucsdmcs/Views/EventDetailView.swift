@@ -14,7 +14,7 @@ struct EventDetailView: View {
         dataService.events.first { $0.id == eventID }
     }
 
-    /// Nil when this person can't answer: a guest, a coach, someone away.
+    /// Nil when this person can't answer: a guest, a coach, someone who left.
     private var rosterID: UUID? {
         membership.canRespond ? membership.rosterId : nil
     }
