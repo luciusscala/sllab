@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { Footer } from "@/components/footer";
+import { Header } from "@/components/header";
 import { RevealProvider } from "@/components/reveal-provider";
 import { PageTransition } from "@/components/page-transition";
 import { themeScript } from "@/lib/theme";
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col bg-bg text-fg">
         <RevealProvider />
+        <Header />
         <main className="flex-1">
           <PageTransition>{children}</PageTransition>
         </main>

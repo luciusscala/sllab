@@ -41,6 +41,11 @@ readable through the API; only the functions above and the server's secret key r
 them. Numbers are stored as digits with the country code (`14155550100`), the form
 Supabase Auth uses, so a JWT's `phone` claim matches with plain equality.
 
+Beside team memberships, `platform_roles` says what a person is to SLLAB itself:
+`admin` or `league_director`. It gates the console at app.sllab.io/console. People can
+read their own rows; granting one is done by hand with the secret key (the migration
+that adds the table has the insert). `is_platform_admin()` is the helper for policies.
+
 `membership_history` records every status change, so attendance can count only the
 stretches a player was active. `reminder_log` records each reminder a captain sends,
 which is how the server caps a team's daily volume.

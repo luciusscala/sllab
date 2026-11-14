@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { listTeams } from "@/lib/data/admin";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
-export const metadata: Metadata = { title: "Admin · Teams" };
+export const metadata: Metadata = { title: "Teams" };
 
 export default async function AdminTeamsPage() {
   await requireAdmin();
@@ -15,7 +15,7 @@ export default async function AdminTeamsPage() {
   const teams = await listTeams();
 
   return (
-    <div className="container-page py-12">
+    <div>
       <h1 className="headline text-3xl">Teams</h1>
 
       <section className="mt-6 card p-5 text-foreground">

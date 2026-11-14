@@ -41,7 +41,7 @@ export default async function AdminHome() {
   ];
 
   return (
-    <div className="container-page py-12">
+    <div>
       <h1 className="headline text-3xl">
         {current ? `${current.year} Season` : "No seasons yet"}
       </h1>

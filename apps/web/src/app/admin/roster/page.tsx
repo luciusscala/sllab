@@ -9,7 +9,7 @@ import { adminSeason, listRoster } from "@/lib/data/admin";
 import { CLASSES, POSITIONS } from "@/lib/data/roster";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
-export const metadata: Metadata = { title: "Admin · Roster" };
+export const metadata: Metadata = { title: "Roster" };
 
 
 function Select({
@@ -49,14 +49,14 @@ export default async function AdminRosterPage(
 
   if (!season) {
     return (
-      <div className="container-page py-12">
+      <div>
         <p className="text-muted">Create a season before adding players.</p>
       </div>
     );
   }
 
   return (
-    <div className="container-page py-12">
+    <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="headline text-3xl">Roster · {season.year}</h1>
         <SeasonPicker seasons={seasons} selected={season} />

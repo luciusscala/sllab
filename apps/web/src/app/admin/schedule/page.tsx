@@ -9,7 +9,7 @@ import { adminSeason, listFields, listGames, listOpponents } from "@/lib/data/ad
 import { isAdminConfigured } from "@/lib/supabase-admin";
 import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 
-export const metadata: Metadata = { title: "Admin · Schedule" };
+export const metadata: Metadata = { title: "Schedule" };
 
 export default async function AdminSchedulePage(
   props: PageProps<"/admin/schedule">,
@@ -27,14 +27,14 @@ export default async function AdminSchedulePage(
 
   if (!season) {
     return (
-      <div className="container-page py-12">
+      <div>
         <p className="text-muted">Create a season before adding games.</p>
       </div>
     );
   }
 
   return (
-    <div className="container-page py-12">
+    <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="headline text-3xl">Schedule · {season.year}</h1>
         <SeasonPicker seasons={seasons} selected={season} />

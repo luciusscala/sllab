@@ -1,3 +1,4 @@
+import { SiteFooter } from "@/components/shell/site-footer";
 import { TabBar } from "@/components/team/tab-bar";
 import { currentMembership, isStaff } from "@/lib/auth";
 
@@ -12,8 +13,11 @@ export default async function TeamLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       {membership && <TabBar staff={isStaff(membership)} />}
-      {/* Room for the fixed bar on phones, so the last row isn't under it. */}
-      <div className={membership ? "pb-20 md:pb-0" : ""}>{children}</div>
+      <div className="flex-1">{children}</div>
+      {/* Room for the fixed bar on phones, so the footer isn't under it. */}
+      <div className={membership ? "pb-16 md:pb-0" : ""}>
+        <SiteFooter />
+      </div>
     </>
   );
 }

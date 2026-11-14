@@ -13,7 +13,7 @@ import { adminSeason, listFields, listTournaments } from "@/lib/data/admin";
 import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
-export const metadata: Metadata = { title: "Admin · Tournaments" };
+export const metadata: Metadata = { title: "Tournaments" };
 
 export default async function AdminTournamentsPage(
   props: PageProps<"/admin/tournaments">,
@@ -30,7 +30,7 @@ export default async function AdminTournamentsPage(
 
   if (!season) {
     return (
-      <div className="container-page py-12">
+      <div>
         <p className="text-muted">Create a season before adding tournaments.</p>
       </div>
     );
@@ -48,7 +48,7 @@ export default async function AdminTournamentsPage(
   );
 
   return (
-    <div className="container-page py-12">
+    <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="headline text-3xl">Tournaments · {season.year}</h1>
         <SeasonPicker seasons={seasons} selected={season} />

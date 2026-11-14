@@ -1,9 +1,9 @@
-import Link from "next/link";
-
-import { signOut } from "@/app/auth/actions";
+import { DashboardShell } from "@/components/shell/dashboard-shell";
+import { SiteFooter } from "@/components/shell/site-footer";
 import { adminMembership } from "@/lib/auth";
 
 const NAV = [
+  { href: "/admin", label: "Overview", exact: true },
   { href: "/admin/roster", label: "Roster" },
   { href: "/admin/schedule", label: "Schedule" },
   { href: "/admin/practices", label: "Practices" },
@@ -13,33 +13,29 @@ const NAV = [
   { href: "/admin/fields", label: "Fields" },
 ];
 
+/**
+ * The team dashboard: a team's season data, for its captains and coaches.
+ * Convenience only — every page and action guards itself with requireAdmin().
+ * Without an admin membership (the login page) the children render bare.
+ */
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
-  // Convenience only — every page and action guards itself with requireAdmin().
   const admin = await adminMembership();
+
+  if (!admin) {
+    return (
+      <>
+        <div className="flex-1">{children}</div>
+        <SiteFooter />
+      </>
+    );
+  }
 
   return (
     <>
-      {admin && (
-        <div className="border-b border-border">
-          <div className="container-page flex items-center gap-5 py-3">
-            <span className="text-sm font-semibold text-accent">Admin</span>
-            <nav className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
-              {NAV.map((item) => (
-                <Link key={item.href} href={item.href} className="hover:text-foreground">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-            <form action={signOut} className="ml-auto flex items-center gap-3">
-              <span className="hidden text-xs text-muted sm:inline">{admin.personName}</span>
-              <button type="submit" className="text-sm text-muted hover:text-foreground">
-                Sign out
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-      {children}
+      <DashboardShell title="Team dashboard" subtitle={admin.teamName} nav={NAV}>
+        {children}
+      </DashboardShell>
+      <SiteFooter />
     </>
   );
 }

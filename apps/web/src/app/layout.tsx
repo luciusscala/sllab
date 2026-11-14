@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Link from "next/link";
 
 import "./globals.css";
+
+import { TopBar } from "@/components/shell/top-bar";
+import { ToastProvider } from "@/components/ui/toast";
 
 const body = Inter({
   variable: "--font-body",
@@ -11,39 +13,36 @@ const body = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Fixture by SLLAB",
-    template: "%s | Fixture by SLLAB",
+    default: "Fixture",
+    template: "%s · Fixture",
   },
   description: "Your team's schedule, availability and members.",
 };
 
 /**
- * app.sllab.io: Fixture on the web. The team app is the whole site, served
- * from the root; the admin dashboard sits under /admin. Neither belongs to
- * any one club, so the frame is the platform's, not a club's.
+ * app.sllab.io: Fixture on the web. Three surfaces share this frame: the
+ * team app at the root, a team's dashboard under /admin, and the platform
+ * console under /console. The top bar is the same on all of them; each
+ * surface adds its own navigation and footer below.
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${body.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground"
-        >
-          Skip to content
-        </a>
+      <body className="flex min-h-full flex-col">
+        <ToastProvider>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground"
+          >
+            Skip to content
+          </a>
 
-        <header className="border-b border-border">
-          <div className="container-page flex min-h-12 items-center">
-            <Link href="/" className="text-sm font-semibold tracking-wide">
-              Fixture <span className="font-normal text-muted">by SLLAB</span>
-            </Link>
-          </div>
-        </header>
+          <TopBar />
 
-        <main id="main" className="flex-1">
-          {children}
-        </main>
+          <main id="main" className="flex flex-1 flex-col">
+            {children}
+          </main>
+        </ToastProvider>
       </body>
     </html>
   );

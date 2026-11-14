@@ -13,7 +13,7 @@ import { adminSeason, listSocialEvents } from "@/lib/data/admin";
 import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
-export const metadata: Metadata = { title: "Admin · Socials" };
+export const metadata: Metadata = { title: "Socials" };
 
 export default async function AdminSocialsPage(
   props: PageProps<"/admin/socials">,
@@ -27,14 +27,14 @@ export default async function AdminSocialsPage(
 
   if (!season) {
     return (
-      <div className="container-page py-12">
+      <div>
         <p className="text-muted">Create a season before adding social events.</p>
       </div>
     );
   }
 
   return (
-    <div className="container-page py-12">
+    <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="headline text-3xl">Socials · {season.year}</h1>
         <SeasonPicker seasons={seasons} selected={season} />

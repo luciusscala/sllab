@@ -10,7 +10,11 @@ It's part of [SLLAB](../../README.md). It's built with Next.js 16, React 19 and 
 
 **The team app** (`/`). Everything Fixture does on iOS: joining a team with its code, the schedule, availability, and for captains and coaches, creating games and practices (one-off or repeating), managing members and sending SMS reminders. Someone on several teams switches between them in Settings.
 
-**The admin dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Open to the captains and coaches of the team being viewed, with the same sign-in as the team app.
+**The team dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Open to the captains and coaches of the team being viewed, with the same sign-in as the team app. Each page is a table of the records with a drawer for the one being edited (`?new`, `?edit=<id>`), so a reload lands back on the same record.
+
+**The console** (`/console`). The records that belong to no one team: schools, teams, fields, seasons, leagues. For SLLAB and league directors, gated by a `platform_roles` row rather than a team membership. Today it's an overview and a read-only list of teams; the editing moves here from the team dashboard over time.
+
+One top bar runs across all three, with a switcher between the surfaces the signed-in person may use and their account menu.
 
 **The universal-link file** at `/.well-known/apple-app-site-association`. Reminder texts link to `app.sllab.io/events/<id>`; with the app installed, iOS opens the event there, and everyone else gets the event page here.
 
@@ -42,9 +46,9 @@ The app builds without a `.env.local`; pages that need data render empty instead
 
 ```
 src/
-├── app/          (team)/ the team app, admin/ the dashboard, auth/ sign-in and sign-out actions
-├── components/   UI pieces; team/ and admin/ hold section-specific ones
-├── lib/          Supabase clients (per-person and admin), auth, the API client, formatting; data/ holds all data access
+├── app/          (team)/ the team app, admin/ the team dashboard, console/ the platform console, auth/ sign-in and sign-out actions
+├── components/   brand/ the mark, shell/ the top bar and dashboard frame, ui/ primitives (buttons, fields, table, drawer, toast); team/ and admin/ hold section-specific ones
+├── lib/          Supabase clients (per-person and admin), auth and platform roles, the API client, formatting, form helpers; data/ holds all data access
 └── proxy.ts      Keeps the Supabase session fresh
 ```
 

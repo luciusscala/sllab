@@ -173,3 +173,68 @@ html {
   margin-bottom: 0.25rem;
 }
 
+
+/* --- Overlays ------------------------------------------------------------- */
+
+/* Both are native <dialog>s, so focus and Escape come for free. Setting
+   display on a dialog overrides the browser's "hidden when closed", hence the
+   explicit :not([open]) rules. */
+.drawer,
+.dialog-card {
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0;
+  max-width: none;
+  max-height: none;
+}
+
+.drawer::backdrop,
+.dialog-card::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  height: 100dvh;
+  width: min(100%, 30rem);
+  border-width: 0 0 0 1px;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer:not([open]) {
+  display: none;
+}
+
+.dialog-card {
+  margin: auto;
+  width: min(calc(100% - 2rem), 26rem);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawer[open] {
+    animation: drawer-in 220ms ease-out;
+  }
+  .dialog-card[open] {
+    animation: dialog-in 160ms ease-out;
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
