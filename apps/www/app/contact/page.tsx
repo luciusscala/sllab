@@ -5,7 +5,8 @@ import { Magnetic } from "@/components/magnetic";
 import { CONTACT_EMAIL as EMAIL } from "@/lib/contact";
 
 export const metadata: Metadata = {
-  description: "Get in touch",
+  title: "Contact",
+  description: "Get in touch about early access for your team.",
 };
 
 const DETAILS = [

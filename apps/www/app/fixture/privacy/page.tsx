@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Email, PolicyLink, type PolicySection, PolicyPage, PolicySections } from "@/components/policy";
 
 export const metadata: Metadata = {
-  title: "Fixture Privacy Policy | sllab",
+  title: "Fixture by SLLAB Privacy Policy",
   description: "What Fixture by SLLAB collects, why, and who can see it.",
 };
 

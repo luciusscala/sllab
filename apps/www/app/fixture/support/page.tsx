@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Email, PolicyLink, PolicyPage } from "@/components/policy";
 
 export const metadata: Metadata = {
-  title: "Fixture Support | sllab",
+  title: "Fixture by SLLAB Support",
   description: "Help with Fixture by SLLAB: joining a team, signing in, availability, reminders and members.",
 };
 
