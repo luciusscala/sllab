@@ -138,7 +138,6 @@ struct ScheduleView: View {
                         Button("Select") {
                             isSelecting = true
                         }
-                        .foregroundStyle(.white)
                     }
                 }
             }
@@ -236,7 +235,7 @@ struct ScheduleView: View {
             .disabled(isAnsweringSeason)
         }
         .padding()
-        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+        .card()
         .padding(.horizontal)
         .padding(.bottom, 8)
     }

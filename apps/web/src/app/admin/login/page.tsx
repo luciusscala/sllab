@@ -16,7 +16,7 @@ export default async function LoginPage() {
 
   return (
     <div className="container-page py-16">
-      <div className="mx-auto max-w-sm rounded-lg bg-surface p-6 text-foreground">
+      <div className="mx-auto max-w-sm card p-6 text-foreground">
         <h1 className="headline text-2xl">Admin</h1>
         {userId ? (
           <p className="mt-3 text-sm text-muted">

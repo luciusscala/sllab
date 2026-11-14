@@ -28,7 +28,7 @@ export default async function WhoPage() {
     <OnboardingCard title={team.name} subtitle="How do you want to join?">
       <Link
         href={`/join/phone`}
-        className="block w-full rounded-md bg-accent px-4 py-3 text-center text-sm font-semibold text-white transition hover:opacity-90"
+        className="block w-full rounded-md bg-accent px-4 py-3 text-center text-sm font-semibold text-accent-foreground transition hover:opacity-90"
       >
         I&rsquo;m on the team
       </Link>

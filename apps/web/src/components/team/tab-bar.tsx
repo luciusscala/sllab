@@ -38,7 +38,7 @@ export function TabBar({ staff }: { staff: boolean }) {
               aria-current={active ? "page" : undefined}
               className={`flex-1 py-3 text-center text-sm font-semibold transition-colors duration-200 ease-out md:flex-none md:border-b-2 md:py-1 ${
                 active
-                  ? "text-foreground md:border-foreground"
+                  ? "text-accent md:border-accent"
                   : "text-muted hover:text-foreground md:border-transparent"
               }`}
             >

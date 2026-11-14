@@ -4,7 +4,7 @@
  */
 export function SectionHeading({ children }: { children: string }) {
   return (
-    <h2 className="mt-8 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+    <h2 className="mt-8 border-b border-border pb-2 section-label">
       {children}
     </h2>
   );

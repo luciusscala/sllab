@@ -57,7 +57,7 @@ export default async function TeamSchedulePage(props: PageProps<"/">) {
 
   return (
     <div className="container-page py-8 sm:py-10">
-      <div className="rounded-xl bg-surface p-4 text-foreground sm:p-6">
+      <div className="card p-4 text-foreground sm:p-6">
         {welcome === "back" && (
           <p className="mb-4 rounded-lg bg-surface-raised px-4 py-3 text-sm">
             Welcome back, {membership.personName.split(" ")[0]}. Your roster spot is linked to this sign-in.
@@ -83,7 +83,7 @@ export default async function TeamSchedulePage(props: PageProps<"/">) {
             <details className="relative">
               <summary
                 aria-label="Add to schedule"
-                className="flex size-9 cursor-pointer list-none items-center justify-center rounded-full bg-accent text-xl leading-none text-white transition hover:opacity-90 [&::-webkit-details-marker]:hidden"
+                className="flex size-9 cursor-pointer list-none items-center justify-center rounded-full bg-accent text-xl leading-none text-accent-foreground transition hover:opacity-90 [&::-webkit-details-marker]:hidden"
               >
                 +
               </summary>

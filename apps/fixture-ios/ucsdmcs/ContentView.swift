@@ -73,7 +73,6 @@ struct MainTabView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(AppTab.settings)
         }
-        .tint(.white)
         .modifier(TabBarMinimizeModifier())
     }
 }

@@ -164,7 +164,6 @@ struct SettingsView: View {
                 get: { session.isViewingAsPlayer },
                 set: { session.isViewingAsPlayer = $0 }
             ))
-            .accentSwitch()
         } footer: {
             Text(session.isViewingAsPlayer
                  ? "You're seeing the app as players do. Your captain tools come back when you turn this off."

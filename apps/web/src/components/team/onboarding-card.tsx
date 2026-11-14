@@ -13,7 +13,7 @@ export function OnboardingCard({
 }) {
   return (
     <div className="container-page py-16">
-      <div className="mx-auto max-w-sm rounded-xl bg-surface p-6 text-foreground">
+      <div className="mx-auto max-w-sm card p-6 text-foreground">
         <h1 className="headline text-2xl">{title}</h1>
         <p className="mt-1 text-sm text-muted">{subtitle}</p>
         <div className="mt-6">{children}</div>

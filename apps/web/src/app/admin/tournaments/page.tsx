@@ -54,7 +54,7 @@ export default async function AdminTournamentsPage(
         <SeasonPicker seasons={seasons} selected={season} />
       </div>
 
-      <section className="mt-6 rounded-lg bg-surface p-5 text-foreground">
+      <section className="mt-6 card p-5 text-foreground">
         <h2 className="headline text-lg">Add tournament</h2>
 
         <AdminForm action={createTournament} submitLabel="Add tournament" className="mt-4">
@@ -91,7 +91,7 @@ export default async function AdminTournamentsPage(
         <h2 className="headline text-lg">{tournaments.length} tournaments</h2>
 
         {tournaments.map((tournament) => (
-          <div key={tournament.id} className="rounded-lg bg-surface p-4 text-foreground">
+          <div key={tournament.id} className="card p-4 text-foreground">
             <p className="text-sm">
               <span className="font-medium">{formatGameDate(tournament.date)}</span>
               <span className="text-muted"> / {formatTime(tournament.date)}</span>

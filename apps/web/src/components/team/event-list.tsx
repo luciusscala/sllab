@@ -69,7 +69,7 @@ export function EventList({
       <>
         {groups.map((group) => (
           <section key={group.key} className="mt-5">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+            <h2 className="section-label">
               {group.heading}
             </h2>
             <ul className="mt-2 divide-y divide-border border border-border">
@@ -100,14 +100,14 @@ export function EventList({
               onClick={() =>
                 setSelected(allSelected ? new Set() : new Set(allIds))
               }
-              className="text-sm font-medium text-foreground"
+              className="text-sm font-medium text-accent"
             >
               {allSelected ? "Deselect All" : "Select All"}
             </button>
             <button
               type="button"
               onClick={exitSelection}
-              className="text-sm font-semibold text-foreground"
+              className="text-sm font-semibold text-accent"
             >
               Done
             </button>
@@ -116,7 +116,7 @@ export function EventList({
           <button
             type="button"
             onClick={() => setSelecting(true)}
-            className="text-sm font-medium text-foreground"
+            className="text-sm font-medium text-accent"
           >
             Select
           </button>
@@ -131,7 +131,7 @@ export function EventList({
 
       {groups.map((group) => (
         <section key={group.key} className="mt-5">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
+          <h2 className="section-label">
             {group.heading}
           </h2>
           <ul className="mt-2 divide-y divide-border border border-border">

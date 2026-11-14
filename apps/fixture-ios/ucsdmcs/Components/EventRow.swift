@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// One event in the schedule. Two lines: what it is, in white, and when and
+/// where, in grey. Games, socials and tournaments carry a small coloured
+/// label above the title; practices, being most of the list, don't.
 struct EventRow: View {
     let item: EventWithAvailability
     /// False for someone who can't respond (a guest, a coach): no status
@@ -8,8 +11,7 @@ struct EventRow: View {
     var onQuickRespond: ((AvailabilityStatus) -> Void)?
 
     var body: some View {
-        HStack(spacing: 10) {
-            // Leading indicator: logo for games, color bar for others
+        HStack(spacing: 12) {
             if item.event.eventType == "game", let logoURL = item.opponentLogoURL {
                 AsyncImage(url: logoURL) { image in
                     image.resizable().scaledToFit()
@@ -17,45 +19,32 @@ struct EventRow: View {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(AppTheme.surfaceRaised)
                         .overlay {
-                            Text(String(item.game?.opponentName.prefix(3).uppercased() ?? ""))
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(AppTheme.textSecondary)
+                            Text(String(item.game?.opponentName.prefix(3) ?? ""))
+                                .sectionLabel()
                         }
                 }
-                .frame(width: 32, height: 32)
+                .frame(width: 36, height: 36)
                 .clipShape(.rect(cornerRadius: 6))
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                // Line 1: event type (+ opponent for games)
-                if item.event.eventType == "game" {
-                    Text("GAME")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(typeColor)
-                    Text(item.game?.title ?? "Game")
-                        .font(.headline)
-                } else {
-                    Text(item.title.uppercased())
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(typeColor)
+            VStack(alignment: .leading, spacing: 3) {
+                if let typeColor = AppTheme.eventColor(item.event.eventType) {
+                    Text(item.event.typeLabel)
+                        .sectionLabel(typeColor)
                 }
-
-                // Line 2: time at location
-                HStack(spacing: 0) {
-                    Text(item.event.eventDate.formatted(.dateTime.hour().minute()))
-                    if let location = item.location {
-                        Text(" at ")
-                        Text(location)
-                    }
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+                Text(item.title)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.text)
+                    .lineLimit(1)
+                Text(detail)
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .lineLimit(1)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            // Status indicator
             if !showsResponse {
                 EmptyView()
             } else if let status = item.currentRosterStatus {
@@ -84,11 +73,16 @@ struct EventRow: View {
             } else {
                 Image(systemName: "circle.dashed")
                     .font(.title3)
-                    .foregroundStyle(.quaternary)
+                    .foregroundStyle(AppTheme.textSecondary.opacity(0.5))
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 
-    private var typeColor: Color { AppTheme.eventColor(item.event.eventType) }
+    /// "7:00 PM · Muir Field"
+    private var detail: String {
+        let time = item.event.eventDate.formatted(.dateTime.hour().minute())
+        guard let location = item.location else { return time }
+        return "\(time) · \(location)"
+    }
 }

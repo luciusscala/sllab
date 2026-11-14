@@ -43,7 +43,6 @@ struct ProfileView: View {
 
                 Section {
                     Toggle("Text me reminders", isOn: $smsConsent)
-                        .accentSwitch()
                 } footer: {
                     Text("Captains can text reminders about practices and games. You can turn this off any time by replying STOP.")
                 }

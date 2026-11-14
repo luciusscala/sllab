@@ -43,7 +43,6 @@ struct GameFormView: View {
 
                     Section("Location") {
                         Toggle("Home Game", isOn: $isHome)
-                            .accentSwitch()
 
                         if dataService.fields.isEmpty {
                             Text("Loading fields...")

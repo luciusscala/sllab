@@ -63,7 +63,7 @@ export function MessageComposer({
         </p>
         <Link
           href={backHref}
-          className="mt-5 inline-block rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white"
+          className="mt-5 inline-block rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground"
         >
           OK
         </Link>
@@ -102,7 +102,7 @@ export function MessageComposer({
         </button>
       </div>
 
-      <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted">
+      <p className="mt-5 section-label">
         Players ({selected.size} selected)
       </p>
       <ul className="mt-2 divide-y divide-border rounded-lg bg-surface-raised">
@@ -145,7 +145,7 @@ export function MessageComposer({
       <button
         type="submit"
         disabled={sendable === 0 || pending}
-        className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Sending…" : `Send (${sendable})`}
       </button>

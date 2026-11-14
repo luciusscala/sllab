@@ -59,7 +59,7 @@ export default async function JoinPage() {
               <span className="text-muted">You left {m.teamName}</span>
               <form action={rejoinTeam}>
                 <input type="hidden" name="membership_id" value={m.membershipId} />
-                <button type="submit" className="font-medium text-foreground underline underline-offset-4">
+                <button type="submit" className="font-medium text-accent underline underline-offset-4">
                   Rejoin
                 </button>
               </form>

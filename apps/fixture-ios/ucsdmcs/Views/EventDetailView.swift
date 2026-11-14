@@ -146,7 +146,7 @@ struct EventDetailView: View {
             } else {
                 Text(event.typeLabel)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(AppTheme.eventColor(event.eventType))
+                    .foregroundStyle(AppTheme.eventColor(event.eventType) ?? AppTheme.textSecondary)
             }
 
             Divider()
@@ -192,7 +192,7 @@ struct EventDetailView: View {
             }
         }
         .padding()
-        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+        .card()
     }
 
     // MARK: - Availability Picker
@@ -252,7 +252,7 @@ struct EventDetailView: View {
                                 }
                             }
                         }
-                        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+                        .card()
                     }
                 }
             }
@@ -290,7 +290,7 @@ struct EventDetailView: View {
                             }
                         }
                     }
-                    .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+                    .card()
                 }
             }
         }

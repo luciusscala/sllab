@@ -7,7 +7,7 @@ import { deleteEvent } from "@/app/(team)/actions";
 import { AdminForm } from "@/components/admin/admin-form";
 import { AvailabilityBadge } from "@/components/team/availability-badge";
 import { AvailabilityPicker } from "@/components/team/availability-picker";
-import { TYPE_COLOR } from "@/components/team/event-row";
+import { TYPE_COLOR, TYPE_LABEL } from "@/components/team/event-row";
 import { MemberList } from "@/components/team/member-list";
 import { canRespond, isStaff, requireMember } from "@/lib/auth";
 import {
@@ -25,7 +25,7 @@ export const metadata: Metadata = { title: "Event" };
 const STATUSES: AvailabilityStatus[] = ["yes", "no"];
 
 const LINK =
-  "text-sm font-medium text-foreground underline underline-offset-4 transition hover:opacity-70";
+  "text-sm font-medium text-accent underline underline-offset-4 transition hover:opacity-70";
 
 export default async function EventPage(props: PageProps<"/events/[id]">) {
   const membership = await requireMember();
@@ -67,7 +67,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
 
   return (
     <div className="container-page py-8 sm:py-10">
-      <div className="rounded-xl bg-surface p-4 text-foreground sm:p-6">
+      <div className="card p-4 text-foreground sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className={LINK}>
             ‹ Schedule
@@ -110,11 +110,16 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
               )}
               <div>
                 <h1 className="headline text-lg">{event.title}</h1>
-                <p className="text-xs text-muted">{event.isHome ? "Home" : "Away"}</p>
+                <p className="meta">{event.isHome ? "Home" : "Away"}</p>
               </div>
             </div>
           ) : (
-            <h1 className={`headline text-lg ${TYPE_COLOR[event.type]}`}>{event.title}</h1>
+            <div>
+              {TYPE_COLOR[event.type] && (
+                <p className={`section-label ${TYPE_COLOR[event.type]}`}>{TYPE_LABEL[event.type]}</p>
+              )}
+              <h1 className="headline text-lg">{event.title}</h1>
+            </div>
           )}
 
           <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
@@ -126,7 +131,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
                   href={directions}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-foreground"
+                  className="inline-flex items-center gap-1 text-accent"
                 >
                   {event.location}
                   <span aria-hidden className="text-xs">

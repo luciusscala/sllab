@@ -72,7 +72,7 @@ struct TeamCodeView: View {
                     .disabled(rejoining != nil)
                 }
                 .padding(12)
-                .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+                .field()
             }
         }
     }

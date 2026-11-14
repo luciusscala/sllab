@@ -128,7 +128,7 @@ struct JoinFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(12)
-            .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+            .field()
     }
 }
 

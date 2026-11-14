@@ -32,7 +32,7 @@ export function SeasonPicker({
       </select>
       <button
         type="submit"
-        className="bg-accent px-3 py-1.5 text-sm font-semibold text-white transition duration-200 ease-out hover:opacity-90 active:scale-[0.98] active:opacity-80"
+        className="bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground transition duration-200 ease-out hover:opacity-90 active:scale-[0.98] active:opacity-80"
       >
         Go
       </button>

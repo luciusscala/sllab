@@ -53,7 +53,7 @@ export function AdminForm({
         className={
           destructive
             ? `${BUTTON} border border-not-going/40 text-not-going hover:bg-not-going/10`
-            : `mt-4 ${BUTTON} bg-accent text-white`
+            : `mt-4 ${BUTTON} bg-accent text-accent-foreground`
         }
       >
         {pending ? (destructive ? "Deleting…" : "Saving…") : submitLabel}

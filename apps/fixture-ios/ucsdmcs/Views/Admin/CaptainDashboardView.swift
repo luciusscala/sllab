@@ -99,7 +99,7 @@ struct CaptainDashboardView: View {
             }
         }
         .padding()
-        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+        .card()
     }
 
     private func statCell(value: String, label: String, color: Color) -> some View {
@@ -136,7 +136,7 @@ struct CaptainDashboardView: View {
                     }
                 }
             }
-            .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+            .card()
         }
     }
 

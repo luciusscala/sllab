@@ -1,36 +1,44 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Fixture by SLLAB on the web — colours
+   Fixture by SLLAB on the web — colours and type
    One scheme, dark, shared with the iOS app: these values are the ones in
    apps/fixture-ios/ucsdmcs/Theme/AppTheme.swift, so change both together.
-   White text on charcoal, the pitch green from the app icon for filled
-   controls, and colour otherwise only where it means something.
+
+   Colour has four jobs and nothing else: the ground, the one interactive
+   accent, meaning (availability), and picking the rarer event types out of
+   the schedule. Hierarchy within text comes from weight and size, not colour:
+   a row has one semibold white line and one regular grey one.
    --------------------------------------------------------------------------- */
 
 :root {
   color-scheme: dark;
 
   /* Ground */
-  --background: #1c1f23; /* behind every page; charcoal rather than black */
-  --surface: #262a2f; /* cards and rows */
-  --surface-raised: #30353b; /* fields, hovered rows, placeholders */
-  --border: #3a4047;
-  --border-strong: #4a515a;
+  --background: #141619;
+  --surface: #22262b; /* rows and cards, ruled off from the ground by --border */
+  --surface-raised: #2d3238; /* fields, placeholders, pressed rows */
+  --border: rgb(255 255 255 / 8%); /* the hairline around cards and between rows */
+  --border-strong: rgb(255 255 255 / 16%);
 
   /* Text */
   --foreground: #ffffff;
   --muted: #a3a9b1;
 
-  /* Accent: filled buttons and controls, always with white on top. Too dark
-     to use as text on the background. */
-  --accent: #356334;
+  /* Accent: the brightest thing on the page, so the eye lands on what's
+     clickable. Dark text on it, since it's light. */
+  --accent: #3ddc84;
+  --accent-foreground: #0b1a10;
 
-  /* Meaning */
-  --going: #34c759;
+  /* Meaning. Going is the accent: one green, one meaning. */
+  --going: var(--accent);
   --not-going: #ff453a;
   --warning: #ff9f0a; /* no response, away, errors worth a look */
+
+  /* Event types. Practices are most of the schedule and get no colour. */
   --game: #e0b034;
+  --social: #bf7af0;
+  --tournament: #40c8e0;
 }
 
 @theme static inline {
@@ -42,10 +50,13 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-going: var(--going);
   --color-not-going: var(--not-going);
   --color-warning: var(--warning);
   --color-game: var(--game);
+  --color-social: var(--social);
+  --color-tournament: var(--tournament);
 
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
@@ -54,6 +65,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -66,11 +78,11 @@ html {
 
 ::selection {
   background: var(--accent);
-  color: var(--foreground);
+  color: var(--accent-foreground);
 }
 
 :focus-visible {
-  outline: 2px solid var(--foreground);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -97,13 +109,47 @@ html {
   padding-inline: 1.25rem;
 }
 
-/* Headings. One typeface throughout: hierarchy comes from weight and size,
-   not from caps or a condensed face. The slight negative tracking keeps large
-   sizes from looking loose. */
+/* --- Type scale ---------------------------------------------------------- */
+
+/* Page and card titles. One typeface throughout: hierarchy comes from weight
+   and size, not from caps or a condensed face. The slight negative tracking
+   keeps large sizes from looking loose. */
 @utility headline {
   font-weight: 600;
   letter-spacing: -0.021em;
   line-height: 1.15;
+}
+
+/* The line you scan a list for: a name, an opponent, a day. */
+@utility row-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.375rem;
+  color: var(--foreground);
+}
+
+/* Everything beside it: a time, a place, a role. */
+@utility meta {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--muted);
+}
+
+/* A label that names a group or a type: small, uppercase, tracked, quiet. */
+@utility section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* A card: content on the surface colour with a hairline edge. */
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
 }
 
 /* Form control. One radius, one border, one padding step, reused everywhere

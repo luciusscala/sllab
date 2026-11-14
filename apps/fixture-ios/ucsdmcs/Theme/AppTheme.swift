@@ -4,18 +4,21 @@ import SwiftUI
 /// `apps/web/src/app/globals.css` defines the same values: change a colour in
 /// both places together.
 ///
-/// Colour carries meaning, not decoration. White text on charcoal, the pitch
-/// green from the app icon for the few filled controls, and colour otherwise
-/// only for availability and for picking games out of the schedule.
+/// Colour has four jobs and nothing else: the ground, the one interactive
+/// accent, meaning (availability), and picking the rarer event types out of
+/// the schedule. Hierarchy within text comes from weight and size, not colour:
+/// a row has one semibold white line and one regular grey one.
 enum AppTheme {
     // MARK: Ground
 
-    /// Behind every screen. Charcoal rather than black.
-    static let background = Color(hex: 0x1C1F23)
-    /// Rows, cards and fields.
-    static let surface = Color(hex: 0x262A2F)
-    /// Something sitting on a surface: a placeholder, a selected chip.
-    static let surfaceRaised = Color(hex: 0x30353B)
+    /// Behind every screen.
+    static let background = Color(hex: 0x141619)
+    /// Rows and cards, ruled off from the ground by `border`.
+    static let surface = Color(hex: 0x22262B)
+    /// Something on a surface: a field, a placeholder, a pressed row.
+    static let surfaceRaised = Color(hex: 0x2D3238)
+    /// A hairline around cards and between rows.
+    static let border = Color.white.opacity(0.08)
 
     // MARK: Text
 
@@ -24,22 +27,36 @@ enum AppTheme {
 
     // MARK: Accent
 
-    /// The pitch green from the app icon. Filled buttons and switches, always
-    /// with white on top; too dark to use as text on the background.
-    static let accent = Color(hex: 0x356334)
+    /// The brightest thing on screen, so the eye lands on what's tappable:
+    /// the primary button, links, the selected tab, toggles, checkmarks.
+    static let accent = Color(hex: 0x3DDC84)
+    /// Text on the accent. Dark, since the accent is light.
+    static let onAccent = Color(hex: 0x0B1A10)
 
     // MARK: Meaning
 
-    static let going = Color(hex: 0x34C759)
+    /// Going is the accent: one green, one meaning.
+    static let going = accent
     static let notGoing = Color(hex: 0xFF453A)
     /// No response, away, and anything else that needs a look.
     static let warning = Color(hex: 0xFF9F0A)
-    static let game = Color(hex: 0xE0B034)
 
-    /// The label colour for an event type: games stand out, everything else
-    /// reads as plain text.
-    static func eventColor(_ eventType: String) -> Color {
-        eventType == "game" ? game : textSecondary
+    // MARK: Event types
+
+    /// Practices are most of the schedule, so they get no colour; the
+    /// exceptions do.
+    static let game = Color(hex: 0xE0B034)
+    static let social = Color(hex: 0xBF7AF0)
+    static let tournament = Color(hex: 0x40C8E0)
+
+    /// The colour that marks an event type in a list, or nil for the default.
+    static func eventColor(_ eventType: String) -> Color? {
+        switch eventType {
+        case "game": return game
+        case "social": return social
+        case "tournament": return tournament
+        default: return nil
+        }
     }
 
     /// Cards and fields.
@@ -47,7 +64,7 @@ enum AppTheme {
 }
 
 extension Color {
-    /// `Color(hex: 0x1C1F23)`, so the values read the same as the CSS.
+    /// `Color(hex: 0x141619)`, so the values read the same as the CSS.
     init(hex: UInt32) {
         self.init(
             red: Double((hex >> 16) & 0xFF) / 255,
@@ -66,14 +83,32 @@ extension View {
             .background(AppTheme.background)
     }
 
-    /// Switches in the accent, since the app's tint is white.
-    func accentSwitch() -> some View {
-        tint(AppTheme.accent)
+    /// A card: content on the surface colour with a hairline edge.
+    func card() -> some View {
+        background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                    .strokeBorder(AppTheme.border)
+            )
     }
 
-    /// The main action on a screen: a filled pitch-green button.
+    /// A text field or similar input, raised off its card.
+    func field() -> some View {
+        background(AppTheme.surfaceRaised, in: .rect(cornerRadius: AppTheme.cornerRadius))
+    }
+
+    /// The main action on a screen: a filled accent button with dark text.
     func primaryButton() -> some View {
         buttonStyle(.borderedProminent)
             .tint(AppTheme.accent)
+            .foregroundStyle(AppTheme.onAccent)
+    }
+
+    /// A small label that names a group or a type: uppercase, tracked, quiet.
+    func sectionLabel(_ color: Color = AppTheme.textSecondary) -> some View {
+        font(.caption.weight(.semibold))
+            .textCase(.uppercase)
+            .kerning(0.6)
+            .foregroundStyle(color)
     }
 }

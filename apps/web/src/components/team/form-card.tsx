@@ -12,12 +12,12 @@ export function FormCard({
 }) {
   return (
     <div className="container-page py-8 sm:py-10">
-      <div className="mx-auto max-w-lg rounded-xl bg-surface p-4 text-foreground sm:p-6">
+      <div className="mx-auto max-w-lg card p-4 text-foreground sm:p-6">
         <div className="flex items-center justify-between">
           <h1 className="headline text-xl">{title}</h1>
           <Link
             href={cancelHref}
-            className="text-sm font-medium text-foreground underline underline-offset-4 transition hover:opacity-70"
+            className="text-sm font-medium text-accent underline underline-offset-4 transition hover:opacity-70"
           >
             Cancel
           </Link>

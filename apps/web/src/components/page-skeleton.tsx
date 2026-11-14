@@ -16,7 +16,7 @@ export function PageSkeleton({ rows = 6 }: { rows?: number }) {
     <div className="container-page py-8 sm:py-10">
       <div
         role="status"
-        className="rounded-xl bg-surface p-4 text-foreground sm:p-6"
+        className="card p-4 text-foreground sm:p-6"
       >
         <span className="sr-only">Loading</span>
 

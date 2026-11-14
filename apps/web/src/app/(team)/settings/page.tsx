@@ -33,7 +33,7 @@ export default async function TeamSettingsPage() {
 
   return (
     <div className="container-page py-8 sm:py-10">
-      <div className="rounded-xl bg-surface p-4 text-foreground sm:p-6">
+      <div className="card p-4 text-foreground sm:p-6">
         <h1 className="headline text-xl sm:text-2xl">Settings</h1>
 
         <SectionHeading>Profile</SectionHeading>
@@ -90,7 +90,7 @@ export default async function TeamSettingsPage() {
           <>
             <SectionHeading>Team admin</SectionHeading>
             <p className="mt-3 text-sm">
-              <Link href="/admin" className="text-foreground underline underline-offset-4">
+              <Link href="/admin" className="text-accent underline underline-offset-4">
                 Open the admin dashboard
               </Link>
               <span className="ml-2 text-muted">— rosters, results, fields and opponents.</span>

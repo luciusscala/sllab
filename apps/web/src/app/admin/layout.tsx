@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       {admin && (
         <div className="border-b border-border">
           <div className="container-page flex items-center gap-5 py-3">
-            <span className="text-sm font-semibold text-foreground">Admin</span>
+            <span className="text-sm font-semibold text-accent">Admin</span>
             <nav className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
               {NAV.map((item) => (
                 <Link key={item.href} href={item.href} className="hover:text-foreground">

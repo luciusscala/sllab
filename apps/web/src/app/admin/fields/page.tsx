@@ -18,7 +18,7 @@ export default async function AdminFieldsPage() {
     <div className="container-page py-12">
       <h1 className="headline text-3xl">Fields</h1>
 
-      <section className="mt-6 rounded-lg bg-surface p-5 text-foreground">
+      <section className="mt-6 card p-5 text-foreground">
         <h2 className="headline text-lg">Add field</h2>
 
         <AdminForm action={createField} submitLabel="Add field" className="mt-4">
@@ -57,7 +57,7 @@ export default async function AdminFieldsPage() {
         <h2 className="headline text-lg">{fields.length} fields</h2>
 
         {fields.map((field) => (
-          <div key={field.id} className="rounded-lg bg-surface p-4 text-foreground">
+          <div key={field.id} className="card p-4 text-foreground">
             <p className="headline text-lg">{field.label}</p>
             <p className="text-sm text-muted">{field.picture_path ?? "no photo"}</p>
 
