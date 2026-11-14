@@ -99,7 +99,17 @@ export default async function TeamSettingsPage() {
         )}
 
         <SectionHeading>Account</SectionHeading>
-        <div className="mt-3 space-y-4">
+        <form action={signOut} className="mt-3">
+          <button
+            type="submit"
+            className="rounded-md border border-border-strong px-4 py-2 text-sm font-semibold transition hover:bg-surface-raised"
+          >
+            Sign out
+          </button>
+        </form>
+
+        {/* The two things that take you off the team, together and last. */}
+        <div className="mt-8 space-y-4 border-t border-border pt-6">
           <AdminForm
             action={leaveTeam}
             submitLabel="Leave Team"
@@ -107,18 +117,9 @@ export default async function TeamSettingsPage() {
             confirm={`Leave ${membership.teamName}? Your name stays on past rosters, and you can rejoin with the team code.`}
           >
             <p className="mb-3 text-sm text-muted">
-              You&rsquo;ll stop seeing the schedule and won&rsquo;t be asked about events.
+              Keeps your spot. You&rsquo;ll stop seeing the schedule and won&rsquo;t be asked about events; rejoin any time with the team code.
             </p>
           </AdminForm>
-
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-md border border-border-strong px-4 py-2 text-sm font-semibold transition hover:bg-surface-raised"
-            >
-              Sign out
-            </button>
-          </form>
 
           <AdminForm
             action={deleteAccount}
@@ -127,7 +128,7 @@ export default async function TeamSettingsPage() {
             confirm="Delete your account? Your sign-in and phone number are removed. Your name stays on the seasons you played. This cannot be undone."
           >
             <p className="mb-3 text-sm text-muted">
-              Removes your sign-in and phone number from every team. Past rosters keep your name.
+              Removes your sign-in and phone number from every team. Past rosters keep your name. This can&rsquo;t be undone.
             </p>
           </AdminForm>
         </div>

@@ -42,6 +42,7 @@ struct SettingsView: View {
                         switchSection
                     }
                     accountSection
+                    dangerSection
                 }
                 .listRowBackground(AppTheme.surface)
             }
@@ -103,7 +104,7 @@ struct SettingsView: View {
                 Button("Take a break") {
                     Task { await run { try await session.setMyStatus(.away, membership: membership) } }
                 }
-                .foregroundStyle(.secondary)
+                .neutralAction()
             }
         } header: {
             Text("Team")
@@ -193,6 +194,8 @@ struct SettingsView: View {
 
     // MARK: - Account
 
+    /// Signing out is reversible and reads as a plain row. The accent is kept
+    /// for a guest's one real next step.
     private var accountSection: some View {
         Section {
             if membership.role == .guest {
@@ -203,19 +206,24 @@ struct SettingsView: View {
                 }
             }
 
-            Button(role: .destructive) {
-                showLeaveConfirm = true
-            } label: {
-                HStack {
-                    Text("Leave Team")
-                    Spacer()
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .foregroundStyle(AppTheme.notGoing)
-                }
-            }
-
             Button("Sign Out") {
                 Task { await session.signOut() }
+            }
+            .neutralAction()
+        } header: {
+            Text("Account")
+        } footer: {
+            if session.isAnonymous {
+                Text("You're browsing as a guest.")
+            }
+        }
+    }
+
+    /// The two things that take you off the team, together and last, in red.
+    private var dangerSection: some View {
+        Section {
+            Button("Leave Team", role: .destructive) {
+                showLeaveConfirm = true
             }
 
             if !session.isAnonymous {
@@ -223,12 +231,8 @@ struct SettingsView: View {
                     showDeleteConfirm = true
                 }
             }
-        } header: {
-            Text("Account")
         } footer: {
-            if session.isAnonymous {
-                Text("You're browsing as a guest.")
-            }
+            Text("Leaving keeps your spot; you can rejoin with the team code. Deleting your account can't be undone.")
         }
     }
 

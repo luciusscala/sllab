@@ -104,6 +104,14 @@ extension View {
             .foregroundStyle(AppTheme.onAccent)
     }
 
+    /// A row that does something ordinary and reversible, like signing out
+    /// or taking a break: white, like the text around it. The accent is for
+    /// the one action a screen is there for, and red for the ones that
+    /// take something away.
+    func neutralAction() -> some View {
+        foregroundStyle(AppTheme.text)
+    }
+
     /// A small label that names a group or a type: uppercase, tracked, quiet.
     func sectionLabel(_ color: Color = AppTheme.textSecondary) -> some View {
         font(.caption.weight(.semibold))
