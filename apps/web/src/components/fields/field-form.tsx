@@ -1,8 +1,11 @@
 "use client";
 
-import { removeField, saveField } from "@/app/admin/fields/actions";
 import { FormField, Input } from "@/components/ui/field";
+import { RemoveForm } from "@/components/ui/remove-form";
 import { ResourceForm } from "@/components/ui/resource-form";
+import type { FormState } from "@/lib/forms";
+
+type Action = (state: FormState, data: FormData) => Promise<FormState>;
 
 export type FieldValues = {
   id: string;
@@ -12,13 +15,26 @@ export type FieldValues = {
   recommended_parking: string | null;
 };
 
-const CLOSE = "/admin/fields";
-
-/** The drawer's contents: the same form for a new field and an existing one, plus removal for the latter. */
-export function FieldForm({ field, pictureUrl }: { field: FieldValues | null; pictureUrl: string | null }) {
+/**
+ * The drawer's contents: empty for a new field, filled for an existing one.
+ * `remove` is only passed where removal is allowed (the console).
+ */
+export function FieldForm({
+  field,
+  pictureUrl,
+  save,
+  remove,
+  closeHref,
+}: {
+  field: FieldValues | null;
+  pictureUrl: string | null;
+  save: Action;
+  remove?: Action;
+  closeHref: string;
+}) {
   return (
     <>
-      <ResourceForm action={saveField} submitLabel={field ? "Save changes" : "Add field"} closeHref={CLOSE}>
+      <ResourceForm action={save} submitLabel={field ? "Save changes" : "Add field"} closeHref={closeHref}>
         {field && <input type="hidden" name="id" value={field.id} />}
 
         <FormField label="Name" htmlFor="name">
@@ -54,33 +70,22 @@ export function FieldForm({ field, pictureUrl }: { field: FieldValues | null; pi
         >
           {pictureUrl && (
             // eslint-disable-next-line @next/next/no-img-element -- storage URL, sizes vary
-            <img
-              src={pictureUrl}
-              alt=""
-              className="mb-2 h-28 w-full rounded-md border border-border object-cover"
-            />
+            <img src={pictureUrl} alt="" className="mb-2 h-28 w-full rounded-md border border-border object-cover" />
           )}
           <Input id="picture" name="picture" type="file" accept="image/*" />
         </FormField>
       </ResourceForm>
 
-      {field && (
-        <div className="mt-8 border-t border-border pt-5">
-          <ResourceForm
-            action={removeField}
-            submitLabel="Remove field"
-            variant="destructive"
-            closeHref={CLOSE}
-            confirm={{
-              title: `Remove ${field.name}?`,
-              message:
-                "It disappears from every team's venue list. A field with games or practices on it can't be removed.",
-            }}
-          >
-            <input type="hidden" name="id" value={field.id} />
-            <p className="text-sm text-muted">Fields are shared across the platform.</p>
-          </ResourceForm>
-        </div>
+      {field && remove && (
+        <RemoveForm
+          action={remove}
+          hidden={{ id: field.id }}
+          label="Remove field"
+          title={`Remove ${field.name}?`}
+          message="It disappears from every team's venue list. A field with games or practices on it can't be removed."
+          note="Fields are shared by every team."
+          closeHref={closeHref}
+        />
       )}
     </>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { ButtonLink } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
 import { type Column, DataTable } from "@/components/ui/data-table";
 
 /** What the table needs per field, already serialisable. */
@@ -47,20 +47,32 @@ const COLUMNS: Column<FieldRow>[] = [
   },
 ];
 
-export function FieldsTable({ fields }: { fields: FieldRow[] }) {
+/**
+ * The platform's fields. With `editPrefix` (the console) a row opens its
+ * drawer; without (a team's dashboard) the list is for reference.
+ */
+export function FieldsTable({
+  fields,
+  newHref,
+  editPrefix,
+}: {
+  fields: FieldRow[];
+  newHref: string;
+  editPrefix?: string;
+}) {
   return (
     <DataTable
       columns={COLUMNS}
       rows={fields}
       initialSort="name"
-      rowHref={(row) => `/admin/fields?edit=${row.id}`}
+      rowHref={editPrefix ? (row) => `${editPrefix}${row.id}` : undefined}
       searchText={(row) => `${row.name} ${row.area ?? ""} ${row.address ?? ""}`}
       searchPlaceholder="Search fields"
       empty={{
         title: "No fields yet",
-        description: "A field is anywhere the team plays or practises. Add one and it's available to every team.",
+        description: "A field is anywhere a team plays or practises. One added here is available to every team.",
         action: (
-          <ButtonLink href="/admin/fields?new" variant="primary">
+          <ButtonLink href={newHref} variant="primary">
             New field
           </ButtonLink>
         ),

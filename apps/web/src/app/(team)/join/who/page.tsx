@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { continueAsGuest } from "@/app/auth/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { OnboardingCard } from "@/components/team/onboarding-card";
 import { PENDING, readPending } from "@/lib/pending";
 import { supabaseUser } from "@/lib/supabase-server";
@@ -37,11 +37,11 @@ export default async function WhoPage() {
       </p>
 
       <div className="mt-6">
-        <AdminForm action={continueAsGuest} submitLabel="Just looking">
+        <ActionForm action={continueAsGuest} submitLabel="Just looking">
           <p className="mb-1 text-center text-xs text-muted">
             See the schedule without signing in. You won&rsquo;t be able to respond to events.
           </p>
-        </AdminForm>
+        </ActionForm>
       </div>
     </OnboardingCard>
   );

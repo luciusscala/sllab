@@ -7,3 +7,17 @@ export function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
+/**
+ * A path with its query, skipping empty values. Dashboard links carry the
+ * season being viewed (`?season=2026`) alongside the drawer's `edit`/`new`,
+ * so opening and closing a record never jumps to another season.
+ */
+export function withQuery(path: string, params: Record<string, string | number | null | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== "") query.set(key, String(value));
+  }
+  const search = query.toString();
+  return search ? `${path}?${search}` : path;
+}

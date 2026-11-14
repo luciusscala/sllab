@@ -1,113 +1,80 @@
 import type { Metadata } from "next";
 
-import {
-  createSocialEvent,
-  deleteSocialEvent,
-  updateSocialEvent,
-} from "@/app/admin/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { SocialForm } from "@/app/admin/socials/social-form";
+import { SocialsTable } from "@/app/admin/socials/socials-table";
+import { NoSeason } from "@/components/admin/no-season";
 import { SetupNotice } from "@/components/admin/setup-notice";
 import { SeasonPicker } from "@/components/season-picker";
+import { PageHeader } from "@/components/shell/page-header";
+import { ButtonLink } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listSocialEvents } from "@/lib/data/admin";
-import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
+import { datedCells } from "@/lib/data/rows";
+import { toDateTimeLocal } from "@/lib/format";
+import { withQuery } from "@/lib/nav";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
 export const metadata: Metadata = { title: "Socials" };
 
-export default async function AdminSocialsPage(
-  props: PageProps<"/admin/socials">,
-) {
+const PATH = "/admin/socials";
+
+export default async function AdminSocialsPage(props: PageProps<"/admin/socials">) {
   const { teamId } = await requireAdmin();
   if (!isAdminConfigured()) return <SetupNotice />;
 
   const params = await props.searchParams;
   const { seasons, season } = await adminSeason(teamId, "social_events", params.season);
-  const socials = season ? await listSocialEvents(teamId, season.id) : [];
+  if (!season) return <NoSeason />;
 
-  if (!season) {
-    return (
-      <div>
-        <p className="text-muted">Create a season before adding social events.</p>
-      </div>
-    );
-  }
+  const socials = await listSocialEvents(teamId, season.id);
+  const base = withQuery(PATH, { season: season.year });
+  const editing = typeof params.edit === "string" ? socials.find((row) => row.id === params.edit) : undefined;
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="headline text-3xl">Socials · {season.year}</h1>
-        <SeasonPicker seasons={seasons} selected={season} />
+    <>
+      <PageHeader
+        title="Socials"
+        description={`The ${season.year} season's social events.`}
+        actions={
+          <>
+            <SeasonPicker seasons={seasons} selected={season} />
+            <ButtonLink href={withQuery(PATH, { season: season.year, new: 1 })} variant="primary" size="sm">
+              New social
+            </ButtonLink>
+          </>
+        }
+      />
+
+      <div className="mt-6">
+        <SocialsTable
+          editPrefix={`${base}&edit=`}
+          socials={socials.map((row) => ({ id: row.id, ...datedCells(row.date), name: row.name, description: row.description }))}
+        />
       </div>
 
-      <section className="mt-6 card p-5 text-foreground">
-        <h2 className="headline text-lg">Add social event</h2>
-
-        <AdminForm action={createSocialEvent} submitLabel="Add social" className="mt-4">
-          <input type="hidden" name="season_id" value={season.id} />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="field-label" htmlFor="name">Name</label>
-              <input id="name" name="name" required className="field" placeholder="End of season banquet" />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="date">Date &amp; time</label>
-              <input id="date" name="date" type="datetime-local" required className="field" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="field-label" htmlFor="description">Description</label>
-              <input id="description" name="description" className="field" placeholder="Where, what to bring, who's invited" />
-            </div>
-          </div>
-        </AdminForm>
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="headline text-lg">{socials.length} social events</h2>
-
-        {socials.map((social) => (
-          <div key={social.id} className="card p-4 text-foreground">
-            <p className="text-sm">
-              <span className="font-medium">{formatGameDate(social.date)}</span>
-              <span className="text-muted"> / {formatTime(social.date)}</span>
-            </p>
-            <p className="headline mt-0.5 text-lg">{social.name}</p>
-
-            <AdminForm action={updateSocialEvent} submitLabel="Save" className="mt-3">
-              <input type="hidden" name="id" value={social.id} />
-              <input type="hidden" name="event_id" value={social.eventId} />
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="field-label">Name</label>
-                  <input name="name" required defaultValue={social.name} className="field" />
-                </div>
-                <div>
-                  <label className="field-label">Date &amp; time</label>
-                  <input name="date" type="datetime-local" required defaultValue={toDateTimeLocal(social.date)} className="field" />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="field-label">Description</label>
-                  <input name="description" defaultValue={social.description ?? ""} className="field" />
-                </div>
-              </div>
-            </AdminForm>
-
-            <div className="mt-3 flex justify-end border-t border-border pt-3">
-              <AdminForm
-                action={deleteSocialEvent}
-                submitLabel="Delete social"
-                destructive
-                confirm={`Delete ${social.name}? This cannot be undone.`}
-              >
-                <input type="hidden" name="id" value={social.id} />
-                <input type="hidden" name="event_id" value={social.eventId} />
-              </AdminForm>
-            </div>
-          </div>
-        ))}
-      </section>
-    </div>
+      <Drawer
+        open={params.new !== undefined || editing !== undefined}
+        title={editing?.name ?? "New social"}
+        closeHref={base}
+      >
+        <SocialForm
+          key={editing?.id ?? "new"}
+          seasonId={season.id}
+          closeHref={base}
+          social={
+            editing
+              ? {
+                  id: editing.id,
+                  eventId: editing.eventId,
+                  date: toDateTimeLocal(editing.date),
+                  name: editing.name,
+                  description: editing.description,
+                }
+              : null
+          }
+        />
+      </Drawer>
+    </>
   );
 }

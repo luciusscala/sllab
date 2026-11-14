@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { continueSeason } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { type ScheduleGroup, EventList } from "@/components/team/event-list";
 import { canRespond, isStaff, requireMember } from "@/lib/auth";
 import {
@@ -71,7 +71,7 @@ export default async function TeamSchedulePage(props: PageProps<"/">) {
               Say yes and you&rsquo;re back on the roster with last season&rsquo;s details.
               Otherwise you can keep following the schedule.
             </p>
-            <AdminForm action={continueSeason} submitLabel="Yes, I'm playing" className="mt-1" />
+            <ActionForm action={continueSeason} submitLabel="Yes, I'm playing" className="mt-1" />
           </div>
         )}
 

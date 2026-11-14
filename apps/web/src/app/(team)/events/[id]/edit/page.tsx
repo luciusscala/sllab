@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { updateGame, updatePractice } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { GameFields, PracticeFields } from "@/components/team/event-fields";
 import { FormCard } from "@/components/team/form-card";
 import { listFields, listOpponents } from "@/lib/data/admin";
@@ -30,7 +30,7 @@ export default async function EditEventPage(
     const fields = await listFields();
     return (
       <FormCard title="Edit Practice" cancelHref={back}>
-        <AdminForm action={updatePractice} submitLabel="Save">
+        <ActionForm action={updatePractice} submitLabel="Save">
           <input type="hidden" name="event_id" value={event.id} />
           <PracticeFields
             fields={fields}
@@ -40,7 +40,7 @@ export default async function EditEventPage(
               notes: event.practice?.notes ?? null,
             }}
           />
-        </AdminForm>
+        </ActionForm>
       </FormCard>
     );
   }
@@ -49,7 +49,7 @@ export default async function EditEventPage(
     const [fields, teams] = await Promise.all([listFields(), listOpponents(membership.teamId)]);
     return (
       <FormCard title="Edit Game" cancelHref={back}>
-        <AdminForm action={updateGame} submitLabel="Save">
+        <ActionForm action={updateGame} submitLabel="Save">
           <input type="hidden" name="event_id" value={event.id} />
           <GameFields
             fields={fields}
@@ -61,7 +61,7 @@ export default async function EditEventPage(
               isHome: event.game?.isHome ?? true,
             }}
           />
-        </AdminForm>
+        </ActionForm>
       </FormCard>
     );
   }

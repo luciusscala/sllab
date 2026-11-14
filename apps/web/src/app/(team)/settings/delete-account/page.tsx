@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { deleteAccount } from "@/app/auth/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { requireMember } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Delete Account" };
@@ -34,11 +34,14 @@ export default async function DeleteAccountPage() {
           <p className="font-semibold">This can&rsquo;t be undone.</p>
         </div>
 
-        <AdminForm
+        <ActionForm
           action={deleteAccount}
           submitLabel="Delete Account"
           destructive
-          confirm="Delete your account? Your sign-in and phone number are removed. This cannot be undone."
+          confirm={{
+            title: "Delete your account?",
+            message: "Your sign-in and phone number are removed. This cannot be undone.",
+          }}
           className="mt-6"
         />
       </div>

@@ -1,179 +1,100 @@
 import type { Metadata } from "next";
 
-import { createGame, deleteGame, updateGame } from "@/app/admin/actions";
-import { AdminForm } from "@/components/admin/admin-form";
-import { SeasonPicker } from "@/components/season-picker";
+import { GameForm } from "@/app/admin/schedule/game-form";
+import { GamesTable } from "@/app/admin/schedule/games-table";
+import { NoSeason } from "@/components/admin/no-season";
 import { SetupNotice } from "@/components/admin/setup-notice";
+import { SeasonPicker } from "@/components/season-picker";
+import { PageHeader } from "@/components/shell/page-header";
+import { ButtonLink } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listFields, listGames, listOpponents } from "@/lib/data/admin";
+import { datedCells } from "@/lib/data/rows";
+import { toDateTimeLocal } from "@/lib/format";
+import { withQuery } from "@/lib/nav";
 import { isAdminConfigured } from "@/lib/supabase-admin";
-import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Schedule" };
 
-export default async function AdminSchedulePage(
-  props: PageProps<"/admin/schedule">,
-) {
+const PATH = "/admin/schedule";
+
+export default async function AdminSchedulePage(props: PageProps<"/admin/schedule">) {
   const { teamId } = await requireAdmin();
   if (!isAdminConfigured()) return <SetupNotice />;
 
   const params = await props.searchParams;
-  const [{ seasons, season }, teams, fields] = await Promise.all([
+  const [{ seasons, season }, opponents, fields] = await Promise.all([
     adminSeason(teamId, "games", params.season),
     listOpponents(teamId),
     listFields(),
   ]);
-  const games = season ? await listGames(teamId, season.id) : [];
+  if (!season) return <NoSeason />;
 
-  if (!season) {
-    return (
-      <div>
-        <p className="text-muted">Create a season before adding games.</p>
-      </div>
-    );
-  }
+  const games = await listGames(teamId, season.id);
+  const base = withQuery(PATH, { season: season.year });
+  const editing = typeof params.edit === "string" ? games.find((game) => game.id === params.edit) : undefined;
+  const fieldName = new Map(fields.map((field) => [field.id, field.label]));
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="headline text-3xl">Schedule · {season.year}</h1>
-        <SeasonPicker seasons={seasons} selected={season} />
+    <>
+      <PageHeader
+        title="Schedule"
+        description={`The ${season.year} season's games. Open one to correct it or enter the result.`}
+        actions={
+          <>
+            <SeasonPicker seasons={seasons} selected={season} />
+            <ButtonLink href={withQuery(PATH, { season: season.year, new: 1 })} variant="primary" size="sm">
+              New game
+            </ButtonLink>
+          </>
+        }
+      />
+
+      <div className="mt-6">
+        <GamesTable
+          editPrefix={`${base}&edit=`}
+          games={games.map((game) => ({
+            id: game.id,
+            ...datedCells(game.gameDate),
+            opponent: game.opponent,
+            isHome: game.isHome,
+            field: game.fieldId ? (fieldName.get(game.fieldId) ?? null) : null,
+            ourScore: game.ourScore,
+            theirScore: game.theirScore,
+          }))}
+        />
       </div>
 
-      <section className="mt-6 card p-5 text-foreground">
-        <h2 className="headline text-lg">Add game</h2>
-
-        {teams.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">
-            Add a team first — a game needs an opponent.
-          </p>
-        ) : (
-          <AdminForm action={createGame} submitLabel="Add game" className="mt-4">
-            <input type="hidden" name="season_id" value={season.id} />
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="field-label" htmlFor="game_date">Date &amp; time</label>
-                <input id="game_date" name="game_date" type="datetime-local" required className="field" />
-              </div>
-              <div>
-                <label className="field-label" htmlFor="opponent_id">Opponent</label>
-                <select id="opponent_id" name="opponent_id" required defaultValue="" className="field">
-                  <option value="" disabled>Choose…</option>
-                  {teams.map((team) => (
-                    <option key={team.id} value={team.id}>{team.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="field-label" htmlFor="field_id">Field</label>
-                <select id="field_id" name="field_id" defaultValue="" className="field">
-                  <option value="">TBD</option>
-                  {fields.map((field) => (
-                    <option key={field.id} value={field.id}>{field.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="field-label" htmlFor="film_link">Film link</label>
-                <input id="film_link" name="film_link" type="url" className="field" placeholder="https://" />
-              </div>
-              <div>
-                <label className="field-label" htmlFor="our_score">Our score</label>
-                <input id="our_score" name="our_score" type="number" min="0" className="field" />
-              </div>
-              <div>
-                <label className="field-label" htmlFor="their_score">Their score</label>
-                <input id="their_score" name="their_score" type="number" min="0" className="field" />
-              </div>
-              <label className="flex items-center gap-2 self-end pb-2 text-sm">
-                <input name="is_home" type="checkbox" defaultChecked className="size-4" />
-                Home game
-              </label>
-            </div>
-          </AdminForm>
-        )}
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="headline text-lg">{games.length} games</h2>
-
-        {games.map((game) => (
-          <div key={game.id} className="card p-4 text-foreground">
-            <p className="text-sm">
-              <span className="font-medium">{formatGameDate(game.gameDate)}</span>
-              <span className="text-muted"> / {formatTime(game.gameDate)}</span>
-            </p>
-            <p className="headline mt-0.5 text-lg">
-              {game.isHome ? "vs" : "at"} {game.opponent}
-            </p>
-
-            {/* Every field is editable inline: scores are the weekly job, but
-                a misdated or misassigned fixture has to be fixable too. */}
-            <AdminForm action={updateGame} submitLabel="Save" className="mt-3">
-              <input type="hidden" name="id" value={game.id} />
-              <input type="hidden" name="event_id" value={game.eventId} />
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <label className="field-label">Date &amp; time</label>
-                  <input name="game_date" type="datetime-local" required defaultValue={toDateTimeLocal(game.gameDate)} className="field" />
-                </div>
-                <div>
-                  <label className="field-label">Opponent</label>
-                  <select name="opponent_id" required defaultValue={game.opponentId ?? ""} className="field">
-                    <option value="" disabled>Choose…</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>{team.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <label className="flex items-center gap-2 self-end pb-2 text-sm">
-                  <input name="is_home" type="checkbox" defaultChecked={game.isHome} className="size-4" />
-                  Home game
-                </label>
-                <div>
-                  <label className="field-label">Field</label>
-                  <select name="field_id" defaultValue={game.fieldId ?? ""} className="field">
-                    <option value="">TBD</option>
-                    {fields.map((field) => (
-                      <option key={field.id} value={field.id}>{field.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="field-label">Film link</label>
-                  <input name="film_link" type="url" defaultValue={game.filmLink ?? ""} className="field" placeholder="https://" />
-                </div>
-                <div className="flex items-end gap-3">
-                  <div className="w-full">
-                    <label className="field-label">Ours</label>
-                    <input name="our_score" type="number" min="0" defaultValue={game.ourScore ?? ""} className="field" />
-                  </div>
-                  <div className="w-full">
-                    <label className="field-label">Theirs</label>
-                    <input name="their_score" type="number" min="0" defaultValue={game.theirScore ?? ""} className="field" />
-                  </div>
-                </div>
-              </div>
-            </AdminForm>
-
-            {/* Its own form: a nested one is invalid HTML, and the confirm
-                keeps a stray click from dropping a fixture. */}
-            <div className="mt-3 flex justify-end border-t border-border pt-3">
-              <AdminForm
-                action={deleteGame}
-                submitLabel="Delete game"
-                destructive
-                confirm={`Delete ${game.isHome ? "vs" : "at"} ${game.opponent}? This cannot be undone.`}
-              >
-                <input type="hidden" name="id" value={game.id} />
-                <input type="hidden" name="event_id" value={game.eventId} />
-              </AdminForm>
-            </div>
-          </div>
-        ))}
-      </section>
-    </div>
+      <Drawer
+        open={params.new !== undefined || editing !== undefined}
+        title={editing ? `${editing.isHome ? "vs" : "at"} ${editing.opponent}` : "New game"}
+        closeHref={base}
+      >
+        <GameForm
+          key={editing?.id ?? "new"}
+          seasonId={season.id}
+          closeHref={base}
+          opponents={opponents.map((team) => ({ value: team.id, label: team.name }))}
+          fields={fields.map((field) => ({ value: field.id, label: field.label }))}
+          game={
+            editing
+              ? {
+                  id: editing.id,
+                  eventId: editing.eventId,
+                  date: toDateTimeLocal(editing.gameDate),
+                  opponentId: editing.opponentId,
+                  opponent: editing.opponent,
+                  isHome: editing.isHome,
+                  fieldId: editing.fieldId,
+                  filmLink: editing.filmLink,
+                  ourScore: editing.ourScore,
+                  theirScore: editing.theirScore,
+                }
+              : null
+          }
+        />
+      </Drawer>
+    </>
   );
 }

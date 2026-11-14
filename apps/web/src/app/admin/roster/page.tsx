@@ -1,167 +1,92 @@
 import type { Metadata } from "next";
 
-import { createPlayer, deletePlayer, updatePlayer } from "@/app/admin/actions";
-import { SeasonPicker } from "@/components/season-picker";
-import { AdminForm } from "@/components/admin/admin-form";
+import { PlayerForm } from "@/app/admin/roster/player-form";
+import { RosterTable } from "@/app/admin/roster/roster-table";
+import { NoSeason } from "@/components/admin/no-season";
 import { SetupNotice } from "@/components/admin/setup-notice";
+import { SeasonPicker } from "@/components/season-picker";
+import { PageHeader } from "@/components/shell/page-header";
+import { ButtonLink } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listRoster } from "@/lib/data/admin";
-import { CLASSES, POSITIONS } from "@/lib/data/roster";
+import { withQuery } from "@/lib/nav";
+import { publicUrl } from "@/lib/storage";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
 export const metadata: Metadata = { title: "Roster" };
 
+const PATH = "/admin/roster";
 
-function Select({
-  name,
-  options,
-  defaultValue,
-  required,
-}: {
-  name: string;
-  options: string[];
-  defaultValue?: string;
-  required?: boolean;
-}) {
-  return (
-    <select name={name} defaultValue={defaultValue ?? ""} required={required} className="field">
-      <option value="" disabled>
-        Choose…
-      </option>
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-export default async function AdminRosterPage(
-  props: PageProps<"/admin/roster">,
-) {
+export default async function AdminRosterPage(props: PageProps<"/admin/roster">) {
   const { teamId } = await requireAdmin();
   if (!isAdminConfigured()) return <SetupNotice />;
 
   const params = await props.searchParams;
   const { seasons, season } = await adminSeason(teamId, "roster", params.season);
-  const roster = season ? await listRoster(teamId, season.id) : [];
+  if (!season) return <NoSeason />;
 
-  if (!season) {
-    return (
-      <div>
-        <p className="text-muted">Create a season before adding players.</p>
-      </div>
-    );
-  }
+  const roster = await listRoster(teamId, season.id);
+  const base = withQuery(PATH, { season: season.year });
+  const editing = typeof params.edit === "string" ? roster.find((entry) => entry.entryId === params.edit) : undefined;
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="headline text-3xl">Roster · {season.year}</h1>
-        <SeasonPicker seasons={seasons} selected={season} />
+    <>
+      <PageHeader
+        title="Roster"
+        description={`${roster.length} players in ${season.year}. Names, numbers and photos here are what the club site shows.`}
+        actions={
+          <>
+            <SeasonPicker seasons={seasons} selected={season} />
+            <ButtonLink href={withQuery(PATH, { season: season.year, new: 1 })} variant="primary" size="sm">
+              New player
+            </ButtonLink>
+          </>
+        }
+      />
+
+      <div className="mt-6">
+        <RosterTable
+          editPrefix={`${base}&edit=`}
+          players={roster.map((entry) => ({
+            id: entry.entryId,
+            name: entry.name,
+            hometown: entry.hometown,
+            number: entry.number,
+            position: entry.position,
+            year: entry.year,
+            hasPhone: entry.phone !== null,
+          }))}
+        />
       </div>
 
-      <section className="mt-6 card p-5 text-foreground">
-        <h2 className="headline text-lg">Add player</h2>
-
-        <AdminForm action={createPlayer} submitLabel="Add player" className="mt-4">
-          <input type="hidden" name="season_id" value={season.id} />
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="field-label" htmlFor="name">Name</label>
-              <input id="name" name="name" required className="field" />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="hometown">Hometown</label>
-              <input id="hometown" name="hometown" className="field" placeholder="San Diego, CA" />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="number">Number</label>
-              <input id="number" name="number" type="number" min="0" className="field" />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="position">Position</label>
-              <Select name="position" options={POSITIONS} required />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="class">Class</label>
-              <Select name="class" options={CLASSES} required />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="phone">Phone</label>
-              <input id="phone" name="phone" type="tel" inputMode="numeric" className="field" placeholder="(555) 123-4567" />
-              <p className="mt-1 text-xs text-muted">Links their sign-in to this roster spot.</p>
-            </div>
-            <div>
-              <label className="field-label" htmlFor="picture">Photo</label>
-              <input id="picture" name="picture" type="file" accept="image/*" className="field" />
-            </div>
-          </div>
-        </AdminForm>
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="headline text-lg">{roster.length} players</h2>
-
-        {roster.map((entry) => (
-          <div key={entry.entryId} className="card p-4 text-foreground">
-            <AdminForm action={updatePlayer} submitLabel="Save">
-              <input type="hidden" name="person_id" value={entry.personId} />
-              <input type="hidden" name="entry_id" value={entry.entryId} />
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
-                <div className="lg:col-span-2">
-                  <label className="field-label">Name</label>
-                  <input name="name" defaultValue={entry.name} required className="field" />
-                </div>
-                <div>
-                  <label className="field-label">Number</label>
-                  <input name="number" type="number" min="0" defaultValue={entry.number ?? ""} className="field" />
-                </div>
-                <div>
-                  <label className="field-label">Position</label>
-                  <Select name="position" options={POSITIONS} defaultValue={entry.position} required />
-                </div>
-                <div>
-                  <label className="field-label">Class</label>
-                  <Select name="class" options={CLASSES} defaultValue={entry.year} required />
-                </div>
-                <div>
-                  <label className="field-label">Hometown</label>
-                  <input name="hometown" defaultValue={entry.hometown ?? ""} className="field" />
-                </div>
-                <div>
-                  <label className="field-label">Phone</label>
-                  <input name="phone" type="tel" inputMode="numeric" defaultValue={entry.phone ?? ""} className="field" />
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <label className="field-label">
-                  Replace photo {entry.picturePath ? `(current: ${entry.picturePath})` : "(none yet)"}
-                </label>
-                <input name="picture" type="file" accept="image/*" className="field" />
-              </div>
-            </AdminForm>
-
-            {/* Its own form: a nested one is invalid HTML, and the confirm
-                keeps a stray click from dropping a player. */}
-            <div className="mt-3 flex justify-end border-t border-border pt-3">
-              <AdminForm
-                action={deletePlayer}
-                submitLabel="Remove from roster"
-                destructive
-                confirm={`Remove ${entry.name} from the ${season.year} roster? This cannot be undone.`}
-              >
-                <input type="hidden" name="person_id" value={entry.personId} />
-                <input type="hidden" name="entry_id" value={entry.entryId} />
-              </AdminForm>
-            </div>
-          </div>
-        ))}
-      </section>
-    </div>
+      <Drawer
+        open={params.new !== undefined || editing !== undefined}
+        title={editing?.name ?? "New player"}
+        description={editing ? `${editing.position} · ${editing.year}` : `Adds them to the ${season.year} roster.`}
+        closeHref={base}
+      >
+        <PlayerForm
+          key={editing?.entryId ?? "new"}
+          seasonId={season.id}
+          seasonYear={season.year}
+          closeHref={base}
+          pictureUrl={publicUrl("player_pictures", editing?.picturePath)}
+          player={
+            editing
+              ? {
+                  entryId: editing.entryId,
+                  name: editing.name,
+                  hometown: editing.hometown,
+                  number: editing.number,
+                  position: editing.position,
+                  year: editing.year,
+                  phone: editing.phone,
+                }
+              : null
+          }
+        />
+      </Drawer>
+    </>
   );
 }

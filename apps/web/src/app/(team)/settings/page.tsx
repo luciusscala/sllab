@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { signOut } from "@/app/auth/actions";
 import { leaveTeam, updateProfile } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { SectionHeading } from "@/components/section-heading";
 import { ROLE_LABEL, STATUS_LABEL, adminMembership, getViewer, requireMember } from "@/lib/auth";
 import { getCurrentSeason, getRoster } from "@/lib/data/team";
@@ -72,7 +72,7 @@ export default async function TeamSettingsPage() {
         </dl>
 
         {!guest && (
-          <AdminForm action={updateProfile} submitLabel="Save Changes" className="mt-2">
+          <ActionForm action={updateProfile} submitLabel="Save Changes" className="mt-2">
             <label className="field-label" htmlFor="hometown">
               Hometown
             </label>
@@ -83,7 +83,7 @@ export default async function TeamSettingsPage() {
               placeholder="Add hometown"
               className="field"
             />
-          </AdminForm>
+          </ActionForm>
         )}
 
         {admin && (
@@ -119,7 +119,7 @@ export default async function TeamSettingsPage() {
         </p>
 
         <div className="mt-8 border-t border-border pt-6">
-          <AdminForm
+          <ActionForm
             action={leaveTeam}
             submitLabel="Leave Team"
             destructive
@@ -129,7 +129,7 @@ export default async function TeamSettingsPage() {
               You&rsquo;ll stay on this season&rsquo;s roster but stop getting reminders and drop
               off the response lists. Rejoin any time with the team code.
             </p>
-          </AdminForm>
+          </ActionForm>
         </div>
       </div>
     </div>

@@ -1,63 +1,56 @@
 import type { Metadata } from "next";
 
-import { createTeam } from "@/app/admin/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { addTeam } from "@/app/admin/teams/actions";
+import { OpponentsTable } from "@/app/admin/teams/teams-table";
 import { SetupNotice } from "@/components/admin/setup-notice";
+import { PageHeader } from "@/components/shell/page-header";
+import { TeamForm } from "@/components/teams/team-form";
+import { ButtonLink } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { requireAdmin } from "@/lib/auth";
-import { listTeams } from "@/lib/data/admin";
+import { listOpponents } from "@/lib/data/admin";
+import { publicUrl } from "@/lib/storage";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
 export const metadata: Metadata = { title: "Teams" };
 
-export default async function AdminTeamsPage() {
-  await requireAdmin();
+const PATH = "/admin/teams";
+
+/** The teams yours plays. Shared across the platform, so this page adds; the console corrects. */
+export default async function AdminTeamsPage(props: PageProps<"/admin/teams">) {
+  const { teamId } = await requireAdmin();
   if (!isAdminConfigured()) return <SetupNotice />;
-  const teams = await listTeams();
+
+  const params = await props.searchParams;
+  const teams = await listOpponents(teamId);
 
   return (
-    <div>
-      <h1 className="headline text-3xl">Teams</h1>
+    <>
+      <PageHeader
+        title="Teams"
+        description="The teams you play. Every team on Fixture shares this list, so check it before adding one. To correct a name or crest, contact SLLAB."
+        actions={
+          <ButtonLink href={`${PATH}?new=1`} variant="primary" size="sm">
+            New team
+          </ButtonLink>
+        }
+      />
 
-      <section className="mt-6 card p-5 text-foreground">
-        <h2 className="headline text-lg">Add team</h2>
+      <div className="mt-6">
+        <OpponentsTable
+          newHref={`${PATH}?new=1`}
+          teams={teams.map((team) => ({
+            id: team.id,
+            name: team.name,
+            alias: team.data_alias,
+            logoUrl: publicUrl("logos", team.logo_path),
+          }))}
+        />
+      </div>
 
-        <AdminForm action={createTeam} submitLabel="Add team" className="mt-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <label className="field-label" htmlFor="name">Name</label>
-              <input id="name" name="name" required className="field" />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="data_alias">Standings name</label>
-              <input id="data_alias" name="data_alias" className="field" placeholder="Loyola Marymount" />
-              <p className="mt-1 text-xs text-muted">
-                Optional. Only when SportsEngine spells the name differently.
-              </p>
-            </div>
-            <div>
-              <label className="field-label" htmlFor="logo">Logo</label>
-              <input id="logo" name="logo" type="file" accept="image/*" className="field" />
-            </div>
-          </div>
-        </AdminForm>
-      </section>
-
-      <section className="mt-8 card p-5 text-foreground">
-        <h2 className="headline text-lg">{teams.length} teams</h2>
-        <ul className="mt-3 divide-y divide-border">
-          {teams.map((team) => (
-            <li key={team.id} className="flex items-center justify-between py-2 text-sm">
-              <span>
-                {team.name}
-                {team.data_alias && (
-                  <span className="text-muted"> ({team.data_alias})</span>
-                )}
-              </span>
-              <span className="text-muted">{team.logo_path ?? "no logo"}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+      <Drawer open={params.new !== undefined} title="New team" description="An opponent any team can pick." closeHref={PATH}>
+        <TeamForm team={null} logoUrl={null} save={addTeam} closeHref={PATH} />
+      </Drawer>
+    </>
   );
 }

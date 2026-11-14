@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { finishJoin } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { AutoSubmit } from "@/components/auto-submit";
 import { OnboardingCard } from "@/components/team/onboarding-card";
 import { PENDING, readPending } from "@/lib/pending";
@@ -19,9 +19,9 @@ export default async function FinishPage() {
 
   return (
     <OnboardingCard title="One moment" subtitle="Putting you on the team">
-      <AdminForm action={finishJoin} submitLabel="Continue">
+      <ActionForm action={finishJoin} submitLabel="Continue">
         <AutoSubmit />
-      </AdminForm>
+      </ActionForm>
     </OnboardingCard>
   );
 }

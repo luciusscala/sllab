@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { deleteEvent } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { AvailabilityBadge } from "@/components/team/availability-badge";
 import { AvailabilityPicker } from "@/components/team/availability-picker";
 import { TYPE_COLOR, TYPE_LABEL } from "@/components/team/event-row";
@@ -83,14 +83,14 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
                   Edit
                 </Link>
               )}
-              <AdminForm
+              <ActionForm
                 action={deleteEvent}
                 submitLabel="Delete"
                 destructive
                 confirm="Are you sure you want to delete this event? This cannot be undone."
               >
                 <input type="hidden" name="event_id" value={event.id} />
-              </AdminForm>
+              </ActionForm>
             </div>
           )}
         </div>

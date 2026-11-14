@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { createGame } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { GameFields } from "@/components/team/event-fields";
 import { FormCard } from "@/components/team/form-card";
 import { listFields, listOpponents } from "@/lib/data/admin";
@@ -18,9 +18,9 @@ export default async function NewGamePage() {
 
   return (
     <FormCard title="Add Game" cancelHref={"/"}>
-      <AdminForm action={createGame} submitLabel="Add">
+      <ActionForm action={createGame} submitLabel="Add">
         <GameFields fields={fields} teams={teams} />
-      </AdminForm>
+      </ActionForm>
     </FormCard>
   );
 }

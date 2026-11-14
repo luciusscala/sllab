@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { verifyCode } from "@/app/auth/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { OnboardingCard } from "@/components/team/onboarding-card";
 import { PENDING, readPending } from "@/lib/pending";
 import { teamRedirect } from "@/lib/team-path";
@@ -17,7 +17,7 @@ export default async function CodePage() {
 
   return (
     <OnboardingCard title="Check Your Texts" subtitle={`We sent a code to the number ending in ${lastFour}`}>
-      <AdminForm action={verifyCode} submitLabel="Continue">
+      <ActionForm action={verifyCode} submitLabel="Continue">
         <label className="field-label" htmlFor="code">
           6-digit code
         </label>
@@ -31,7 +31,7 @@ export default async function CodePage() {
           required
           className="field text-center font-mono text-2xl tracking-[0.5em]"
         />
-      </AdminForm>
+      </ActionForm>
 
       <p className="mt-4 text-center text-xs text-muted">
         Wrong number or no text?{" "}

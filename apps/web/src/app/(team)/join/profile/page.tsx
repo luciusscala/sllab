@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { completeProfile } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { OnboardingCard } from "@/components/team/onboarding-card";
 import { CLASSES, POSITIONS } from "@/lib/data/roster";
 import { PENDING, readPending } from "@/lib/pending";
@@ -18,7 +18,7 @@ export default async function ProfilePage() {
 
   return (
     <OnboardingCard title="Welcome" subtitle="Tell the team who you are">
-      <AdminForm action={completeProfile} submitLabel="Join the team">
+      <ActionForm action={completeProfile} submitLabel="Join the team">
         <label className="field-label" htmlFor="name">
           Full name
         </label>
@@ -70,7 +70,7 @@ export default async function ProfilePage() {
             few a week in season. Reply STOP to any message to opt out.
           </span>
         </label>
-      </AdminForm>
+      </ActionForm>
     </OnboardingCard>
   );
 }

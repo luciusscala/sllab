@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useId, useRef } from "react";
 
 import { type Variant, buttonClass } from "@/components/ui/button";
 
@@ -15,6 +15,7 @@ export function ConfirmSubmit({
   confirmLabel,
   variant = "destructive",
   disabled,
+  className = "",
   children,
 }: {
   title: string;
@@ -22,10 +23,13 @@ export function ConfirmSubmit({
   confirmLabel: string;
   variant?: Variant;
   disabled?: boolean;
+  /** Extra classes on the trigger button. */
+  className?: string;
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
 
   const close = () => dialogRef.current?.close();
 
@@ -36,7 +40,7 @@ export function ConfirmSubmit({
         type="button"
         disabled={disabled}
         onClick={() => dialogRef.current?.showModal()}
-        className={buttonClass(variant)}
+        className={buttonClass(variant, "md", className)}
       >
         {children}
       </button>
@@ -44,15 +48,15 @@ export function ConfirmSubmit({
       <dialog
         ref={dialogRef}
         className="dialog-card"
-        aria-labelledby="confirm-title"
+        aria-labelledby={titleId}
         onClick={(event) => {
           if (event.target === dialogRef.current) close();
         }}
       >
-        <h2 id="confirm-title" className="headline text-lg">
+        <h2 id={titleId} className="headline text-lg">
           {title}
         </h2>
-        <p className="mt-2 text-sm text-muted">{message}</p>
+        {message && <p className="mt-2 text-sm text-muted">{message}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={close} className={buttonClass("secondary")}>
             Cancel

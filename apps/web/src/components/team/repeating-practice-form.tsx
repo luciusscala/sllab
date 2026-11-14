@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { createRepeatingPractices } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import type { AdminField } from "@/lib/data/admin";
 
 /** Sunday first, numbered as `Date#getUTCDay` — what the action reads back. */
@@ -50,7 +50,7 @@ export function RepeatingPracticeForm({ fields }: { fields: AdminField[] }) {
   }
 
   return (
-    <AdminForm action={createRepeatingPractices} submitLabel="Create">
+    <ActionForm action={createRepeatingPractices} submitLabel="Create">
       <div className="grid gap-5">
         <fieldset>
           <legend className="field-label">Days of week</legend>
@@ -163,6 +163,6 @@ export function RepeatingPracticeForm({ fields }: { fields: AdminField[] }) {
           </p>
         )}
       </div>
-    </AdminForm>
+    </ActionForm>
   );
 }

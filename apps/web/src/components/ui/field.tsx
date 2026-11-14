@@ -40,19 +40,26 @@ export function Textarea({ className = "", ...props }: TextareaHTMLAttributes<HT
 
 type Option = { value: string; label: string };
 
+/**
+ * A dropdown. Required ones open on a disabled "Choose…"; optional ones pass
+ * `emptyLabel` ("TBD", "None") for a blank choice that can be picked.
+ */
 export function Select({
   options,
   placeholder = "Choose…",
+  emptyLabel,
   className = "",
+  defaultValue,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement> & {
   options: (Option | string)[];
   placeholder?: string;
+  emptyLabel?: string;
 }) {
   return (
-    <select {...props} className={`field ${className}`}>
-      <option value="" disabled>
-        {placeholder}
+    <select {...props} defaultValue={defaultValue ?? ""} className={`field ${className}`}>
+      <option value="" disabled={emptyLabel === undefined}>
+        {emptyLabel ?? placeholder}
       </option>
       {options.map((option) => {
         const { value, label } = typeof option === "string" ? { value: option, label: option } : option;
@@ -63,5 +70,15 @@ export function Select({
         );
       })}
     </select>
+  );
+}
+
+/** A labelled checkbox; submits "on" when ticked. */
+export function Checkbox({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  return (
+    <label className="flex items-center gap-2 text-sm">
+      <input type="checkbox" {...props} className="size-4 accent-[var(--accent)]" />
+      {label}
+    </label>
   );
 }

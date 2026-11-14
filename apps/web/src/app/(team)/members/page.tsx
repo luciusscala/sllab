@@ -7,7 +7,7 @@ import {
   setMemberRole,
   setMemberStatus,
 } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { SectionHeading } from "@/components/section-heading";
 import { MemberActions } from "@/components/team/member-actions";
 import { ROLE_LABEL, type Role, isCaptain, requireStaff } from "@/lib/auth";
@@ -87,11 +87,11 @@ export default async function MembersPage() {
                     {label(m)} <span className="text-muted">· {ROLE_LABEL[m.role]}</span>
                   </span>
                   <div className="flex gap-2">
-                    <AdminForm action={reviewMember} submitLabel="Keep" className="inline">
+                    <ActionForm action={reviewMember} submitLabel="Keep" className="inline">
                       <input type="hidden" name="membership_id" value={m.membershipId} />
                       <input type="hidden" name="keep" value="true" />
-                    </AdminForm>
-                    <AdminForm
+                    </ActionForm>
+                    <ActionForm
                       action={reviewMember}
                       submitLabel="Remove"
                       destructive
@@ -100,7 +100,7 @@ export default async function MembersPage() {
                     >
                       <input type="hidden" name="membership_id" value={m.membershipId} />
                       <input type="hidden" name="keep" value="false" />
-                    </AdminForm>
+                    </ActionForm>
                   </div>
                 </li>
               ))}
@@ -209,7 +209,7 @@ export default async function MembersPage() {
           The role applies when that number signs in. Someone already on the team gets it at once.
           {!captain && " Coaches can add players; captains add staff."}
         </p>
-        <AdminForm action={inviteMember} submitLabel="Add" className="mt-3">
+        <ActionForm action={inviteMember} submitLabel="Add" className="mt-3">
           <div className="flex flex-wrap gap-3">
             <input
               name="phone"
@@ -225,7 +225,7 @@ export default async function MembersPage() {
               {captain && <option value="coach">Coach</option>}
             </select>
           </div>
-        </AdminForm>
+        </ActionForm>
 
         {invites.length > 0 && (
           <ul className="mt-4 divide-y divide-border text-sm">
@@ -234,9 +234,9 @@ export default async function MembersPage() {
                 <span className="tabular-nums">
                   +{invite.phone} <span className="text-muted">· {ROLE_LABEL[invite.role]}, waiting to sign in</span>
                 </span>
-                <AdminForm action={cancelInvite} submitLabel="Cancel" destructive className="inline">
+                <ActionForm action={cancelInvite} submitLabel="Cancel" destructive className="inline">
                   <input type="hidden" name="invite_id" value={invite.id} />
-                </AdminForm>
+                </ActionForm>
               </li>
             ))}
           </ul>

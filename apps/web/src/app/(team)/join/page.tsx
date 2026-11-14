@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { signOut } from "@/app/auth/actions";
 import { lookupTeam, rejoinTeam, switchTeam } from "@/app/(team)/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 import { OnboardingCard } from "@/components/team/onboarding-card";
 import { ROLE_LABEL, getViewer } from "@/lib/auth";
 
@@ -68,7 +68,7 @@ export default async function JoinPage() {
         </ul>
       )}
 
-      <AdminForm action={lookupTeam} submitLabel="Continue">
+      <ActionForm action={lookupTeam} submitLabel="Continue">
         <label className="field-label" htmlFor="team_code">
           Team code
         </label>
@@ -81,7 +81,7 @@ export default async function JoinPage() {
           spellCheck={false}
           className="field text-center font-mono text-lg uppercase tracking-widest"
         />
-      </AdminForm>
+      </ActionForm>
 
       <p className="mt-6 text-center text-xs text-muted">
         {userId ? (

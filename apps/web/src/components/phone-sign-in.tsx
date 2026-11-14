@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { sendCode } from "@/app/auth/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { ActionForm } from "@/components/action-form";
 
 /**
  * The phone step, shared by the team app's join flow and the admin login.
@@ -10,7 +10,7 @@ import { AdminForm } from "@/components/admin/admin-form";
  */
 export function PhoneSignIn({ next }: { next?: string }) {
   return (
-    <AdminForm action={sendCode} submitLabel="Text me a code">
+    <ActionForm action={sendCode} submitLabel="Text me a code">
       {next && <input type="hidden" name="next" value={next} />}
 
       <label className="field-label" htmlFor="phone">
@@ -40,6 +40,6 @@ export function PhoneSignIn({ next }: { next?: string }) {
         </Link>
         .
       </p>
-    </AdminForm>
+    </ActionForm>
   );
 }

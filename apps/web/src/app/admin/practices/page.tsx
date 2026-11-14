@@ -1,19 +1,25 @@
 import type { Metadata } from "next";
 
-import { createPractice, deletePractice, updatePractice } from "@/app/admin/actions";
-import { AdminForm } from "@/components/admin/admin-form";
+import { PracticeForm } from "@/app/admin/practices/practice-form";
+import { PracticesTable } from "@/app/admin/practices/practices-table";
+import { NoSeason } from "@/components/admin/no-season";
 import { SetupNotice } from "@/components/admin/setup-notice";
 import { SeasonPicker } from "@/components/season-picker";
+import { PageHeader } from "@/components/shell/page-header";
+import { ButtonLink } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { requireAdmin } from "@/lib/auth";
 import { adminSeason, listFields, listPractices } from "@/lib/data/admin";
-import { formatGameDate, formatTime, toDateTimeLocal } from "@/lib/format";
+import { datedCells } from "@/lib/data/rows";
+import { formatGameDate, toDateTimeLocal } from "@/lib/format";
+import { withQuery } from "@/lib/nav";
 import { isAdminConfigured } from "@/lib/supabase-admin";
 
 export const metadata: Metadata = { title: "Practices" };
 
-export default async function AdminPracticesPage(
-  props: PageProps<"/admin/practices">,
-) {
+const PATH = "/admin/practices";
+
+export default async function AdminPracticesPage(props: PageProps<"/admin/practices">) {
   const { teamId } = await requireAdmin();
   if (!isAdminConfigured()) return <SetupNotice />;
 
@@ -22,118 +28,66 @@ export default async function AdminPracticesPage(
     adminSeason(teamId, "practices", params.season),
     listFields(),
   ]);
-  const practices = season ? await listPractices(teamId, season.id) : [];
+  if (!season) return <NoSeason />;
 
-  if (!season) {
-    return (
-      <div>
-        <p className="text-muted">Create a season before adding practices.</p>
-      </div>
-    );
-  }
-
-  const fieldOptions = (
-    <>
-      <option value="" disabled>Choose…</option>
-      {fields.map((field) => (
-        <option key={field.id} value={field.id}>{field.label}</option>
-      ))}
-    </>
-  );
+  const practices = await listPractices(teamId, season.id);
+  const base = withQuery(PATH, { season: season.year });
+  const editing = typeof params.edit === "string" ? practices.find((row) => row.id === params.edit) : undefined;
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="headline text-3xl">Practices · {season.year}</h1>
-        <SeasonPicker seasons={seasons} selected={season} />
+    <>
+      <PageHeader
+        title="Practices"
+        description={`The ${season.year} season's practices.`}
+        actions={
+          <>
+            <SeasonPicker seasons={seasons} selected={season} />
+            <ButtonLink href={withQuery(PATH, { season: season.year, new: 1 })} variant="primary" size="sm">
+              New practice
+            </ButtonLink>
+          </>
+        }
+      />
+
+      <div className="mt-6">
+        <PracticesTable
+          editPrefix={`${base}&edit=`}
+          practices={practices.map((row) => ({
+            id: row.id,
+            ...datedCells(row.date),
+            field: row.field,
+            notes: row.notes,
+            hasFilm: row.filmLink !== null,
+          }))}
+        />
       </div>
 
-      <section className="mt-6 card p-5 text-foreground">
-        <h2 className="headline text-lg">Add practice</h2>
-
-        {fields.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">
-            Add a field first — a practice needs somewhere to happen.
-          </p>
-        ) : (
-          <AdminForm action={createPractice} submitLabel="Add practice" className="mt-4">
-            <input type="hidden" name="season_id" value={season.id} />
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="field-label" htmlFor="date">Date &amp; time</label>
-                <input id="date" name="date" type="datetime-local" required className="field" />
-              </div>
-              <div>
-                <label className="field-label" htmlFor="field_id">Field</label>
-                <select id="field_id" name="field_id" required defaultValue="" className="field">
-                  {fieldOptions}
-                </select>
-              </div>
-              <div>
-                <label className="field-label" htmlFor="film_link">Film link</label>
-                <input id="film_link" name="film_link" type="url" className="field" placeholder="https://" />
-              </div>
-              <div className="sm:col-span-2 lg:col-span-3">
-                <label className="field-label" htmlFor="notes">Notes</label>
-                <input id="notes" name="notes" className="field" placeholder="Bring both kits" />
-              </div>
-            </div>
-          </AdminForm>
-        )}
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <h2 className="headline text-lg">{practices.length} practices</h2>
-
-        {practices.map((practice) => (
-          <div key={practice.id} className="card p-4 text-foreground">
-            <p className="text-sm">
-              <span className="font-medium">{formatGameDate(practice.date)}</span>
-              <span className="text-muted"> / {formatTime(practice.date)}</span>
-            </p>
-            <p className="headline mt-0.5 text-lg">{practice.field}</p>
-
-            <AdminForm action={updatePractice} submitLabel="Save" className="mt-3">
-              <input type="hidden" name="id" value={practice.id} />
-              <input type="hidden" name="event_id" value={practice.eventId} />
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <label className="field-label">Date &amp; time</label>
-                  <input name="date" type="datetime-local" required defaultValue={toDateTimeLocal(practice.date)} className="field" />
-                </div>
-                <div>
-                  <label className="field-label">Field</label>
-                  <select name="field_id" required defaultValue={practice.fieldId} className="field">
-                    {fieldOptions}
-                  </select>
-                </div>
-                <div>
-                  <label className="field-label">Film link</label>
-                  <input name="film_link" type="url" defaultValue={practice.filmLink ?? ""} className="field" placeholder="https://" />
-                </div>
-                <div className="sm:col-span-2 lg:col-span-3">
-                  <label className="field-label">Notes</label>
-                  <input name="notes" defaultValue={practice.notes ?? ""} className="field" />
-                </div>
-              </div>
-            </AdminForm>
-
-            <div className="mt-3 flex justify-end border-t border-border pt-3">
-              <AdminForm
-                action={deletePractice}
-                submitLabel="Delete practice"
-                destructive
-                confirm={`Delete the ${formatGameDate(practice.date)} practice? This cannot be undone.`}
-              >
-                <input type="hidden" name="id" value={practice.id} />
-                <input type="hidden" name="event_id" value={practice.eventId} />
-              </AdminForm>
-            </div>
-          </div>
-        ))}
-      </section>
-    </div>
+      <Drawer
+        open={params.new !== undefined || editing !== undefined}
+        title={editing ? `${formatGameDate(editing.date)} practice` : "New practice"}
+        description={editing?.field}
+        closeHref={base}
+      >
+        <PracticeForm
+          key={editing?.id ?? "new"}
+          seasonId={season.id}
+          closeHref={base}
+          fields={fields.map((field) => ({ value: field.id, label: field.label }))}
+          practice={
+            editing
+              ? {
+                  id: editing.id,
+                  eventId: editing.eventId,
+                  date: toDateTimeLocal(editing.date),
+                  day: formatGameDate(editing.date),
+                  fieldId: editing.fieldId,
+                  notes: editing.notes,
+                  filmLink: editing.filmLink,
+                }
+              : null
+          }
+        />
+      </Drawer>
+    </>
   );
 }

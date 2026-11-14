@@ -1,39 +1,26 @@
+import { buttonClass } from "@/components/ui/button";
 import type { Season } from "@/lib/data/season";
 
 /**
  * Plain GET form, so switching seasons needs no JavaScript. Submits to the
- * current path, which keeps one component usable from both pages.
+ * current path, which also closes any open drawer.
  */
-export function SeasonPicker({
-  seasons,
-  selected,
-}: {
-  seasons: Season[];
-  selected: Season | null;
-}) {
-  if (seasons.length === 0) return null;
+export function SeasonPicker({ seasons, selected }: { seasons: Season[]; selected: Season | null }) {
+  if (seasons.length < 2) return null;
 
   return (
-    <form method="get" className="ml-auto flex items-stretch">
+    <form method="get" className="flex items-center gap-1.5">
       <label htmlFor="season" className="sr-only">
         Season
       </label>
-      <select
-        id="season"
-        name="season"
-        defaultValue={selected?.year ?? seasons[0].year}
-        className="border border-border-strong bg-surface px-3 py-1.5 text-sm text-foreground"
-      >
+      <select id="season" name="season" defaultValue={selected?.year ?? seasons[0].year} className="field h-8 w-auto py-0">
         {seasons.map((option) => (
           <option key={option.id} value={option.year}>
             {option.year}
           </option>
         ))}
       </select>
-      <button
-        type="submit"
-        className="bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground transition duration-200 ease-out hover:opacity-90 active:scale-[0.98] active:opacity-80"
-      >
+      <button type="submit" className={buttonClass("secondary", "sm")}>
         Go
       </button>
     </form>
