@@ -32,6 +32,7 @@ export const isPlatformAdmin = async () => (await getPlatformRoles()).includes("
 /** Anyone with a platform role: the console opens, and each page decides what they may do. */
 export const canUseConsole = async () => (await getPlatformRoles()).length > 0;
 
+/** For console pages and actions only SLLAB may use. The overview is open to every console user, so it's the safe place to send anyone else. */
 export async function requirePlatformAdmin() {
   if (!(await isPlatformAdmin())) redirect("/console");
 }

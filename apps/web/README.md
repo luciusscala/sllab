@@ -10,9 +10,9 @@ It's part of [SLLAB](../../README.md). It's built with Next.js 16, React 19 and 
 
 **The team app** (`/`). Everything Fixture does on iOS: joining a team with its code, the schedule, availability, and for captains and coaches, creating games and practices (one-off or repeating), managing members and sending SMS reminders. Someone on several teams switches between them in Settings.
 
-**The team dashboard** (`/admin`). Editing the season's data: teams and crests, the roster, the schedule, practices, socials, tournaments and fields. Open to the captains and coaches of the team being viewed, with the same sign-in as the team app. Each page is a table of the records with a drawer for the one being edited (`?new`, `?edit=<id>`), so a reload lands back on the same record.
+**The team dashboard** (`/admin`). A team's season data: the roster, the schedule and results, practices, socials and tournaments. Open to the captains and coaches of the team being viewed, with the same sign-in as the team app. Each page is a table of the records with a drawer for the one being edited (`?new`, `?edit=<id>`, alongside `?season=`), so a reload lands back on the same record. Fields and opponent teams are shared by every team, so here they can be added but not edited.
 
-**The console** (`/console`). The records that belong to no one team: schools, teams, fields, seasons, leagues. For SLLAB and league directors, gated by a `platform_roles` row rather than a team membership. Today it's an overview and a read-only list of teams; the editing moves here from the team dashboard over time.
+**The console** (`/console`). The records that belong to no one team: schools, teams, fields and seasons. For SLLAB, gated by a `platform_roles` row rather than a team membership. Bringing a new team onto Fixture happens here: add it, issue its team code, and invite its first captain by phone number. Removing a school, team or season is refused while anything still belongs to it, because those deletes cascade in the database.
 
 One top bar runs across all three, with a switcher between the surfaces the signed-in person may use and their account menu.
 
@@ -24,7 +24,7 @@ A club's public site, like [ucsdmcs.com](https://www.ucsdmcs.com), is a separate
 
 People sign in with their phone number (Supabase Auth texts a code), or as guests with only the team code. Each person has one membership per team with a role (guest, player, captain or coach) and a status. The roles and what each may do are set out in [`supabase/README.md`](../../supabase/README.md).
 
-The session lives in Supabase's auth cookies, refreshed by `src/proxy.ts`. Pages and Server Actions read it through `src/lib/auth.ts` (`requireMember`, `requireStaff`, `requireCaptain`, `requireAdmin`) and query the database as the signed-in person, so row-level security decides what they see; the guards only turn a refusal into a redirect. The admin dashboard is the exception: it writes with the secret key, behind `requireAdmin()`, because it edits tables (opponent teams, fields) that no policy opens, and every write is scoped to the admin's own team.
+The session lives in Supabase's auth cookies, refreshed by `src/proxy.ts`. Pages and Server Actions read it through `src/lib/auth.ts` (`requireMember`, `requireStaff`, `requireCaptain`, `requireAdmin`) and query the database as the signed-in person, so row-level security decides what they see; the guards only turn a refusal into a redirect. The dashboards are the exception: they write with the secret key because they edit tables (teams, fields, seasons, team codes) that no policy opens. The team dashboard's writes sit behind `requireAdmin()` and check that each record belongs to the admin's own team; the console's sit behind `requirePlatformAdmin()`.
 
 Phone numbers never reach the browser. The reminder composer sends roster ids to the [SLLAB API](../api) with the signed-in person's access token, the same call the iOS app makes; the API checks they're staff, looks the numbers up, texts only active members who agreed to texts, and caps a team at ten reminders a day.
 
@@ -47,8 +47,8 @@ The app builds without a `.env.local`; pages that need data render empty instead
 ```
 src/
 ├── app/          (team)/ the team app, admin/ the team dashboard, console/ the platform console, auth/ sign-in and sign-out actions
-├── components/   brand/ the mark, shell/ the top bar and dashboard frame, ui/ primitives (buttons, fields, table, drawer, toast); team/ and admin/ hold section-specific ones
-├── lib/          Supabase clients (per-person and admin), auth and platform roles, the API client, formatting, form helpers; data/ holds all data access
+├── components/   brand/ the mark, shell/ the top bar and dashboard frame, ui/ primitives (buttons, fields, table, drawer, toast); fields/ and teams/ are shared by both dashboards
+├── lib/          Supabase clients (per-person and admin), auth and platform roles, the API client, formatting, form helpers; admin/ the dashboards' shared writes; data/ holds all data access
 └── proxy.ts      Keeps the Supabase session fresh
 ```
 

@@ -1,15 +1,17 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
 import { type Column, DataTable } from "@/components/ui/data-table";
 
 export type TeamRow = {
   id: string;
   name: string;
   alias: string | null;
-  hasCrest: boolean;
-  /** Active memberships: zero for a team that's only ever been an opponent. */
+  school: string | null;
   members: number;
+  hasCode: boolean;
+  hasCrest: boolean;
 };
 
 const COLUMNS: Column<TeamRow>[] = [
@@ -20,16 +22,29 @@ const COLUMNS: Column<TeamRow>[] = [
     cell: (row) => (
       <div>
         <p className="font-semibold text-foreground">{row.name}</p>
-        {row.alias && <p className="text-xs text-muted">League name: {row.alias}</p>}
+        {row.alias && <p className="text-xs text-muted">Standings: {row.alias}</p>}
       </div>
     ),
   },
   {
-    id: "status",
+    id: "school",
+    header: "School",
+    className: "hidden md:table-cell",
+    sort: (row) => row.school,
+    cell: (row) => <span className="text-muted">{row.school ?? "—"}</span>,
+  },
+  {
+    id: "fixture",
     header: "On Fixture",
-    sort: (row) => row.members,
+    sort: (row) => row.members + (row.hasCode ? 0.5 : 0),
     cell: (row) =>
-      row.members > 0 ? <Badge tone="accent">{row.members} members</Badge> : <Badge>Opponent only</Badge>,
+      row.members > 0 ? (
+        <Badge tone="accent">{row.members} members</Badge>
+      ) : row.hasCode ? (
+        <Badge tone="warning">Code issued</Badge>
+      ) : (
+        <Badge>Opponent only</Badge>
+      ),
   },
   {
     id: "crest",
@@ -47,9 +62,17 @@ export function TeamsTable({ teams }: { teams: TeamRow[] }) {
       columns={COLUMNS}
       rows={teams}
       initialSort="name"
-      searchText={(row) => `${row.name} ${row.alias ?? ""}`}
+      rowHref={(row) => `/console/teams?edit=${row.id}`}
+      searchText={(row) => `${row.name} ${row.alias ?? ""} ${row.school ?? ""}`}
       searchPlaceholder="Search teams"
-      empty={{ title: "No teams yet" }}
+      empty={{
+        title: "No teams yet",
+        action: (
+          <ButtonLink href="/console/teams?new=1" variant="primary">
+            New team
+          </ButtonLink>
+        ),
+      }}
     />
   );
 }
