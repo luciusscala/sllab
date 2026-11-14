@@ -51,7 +51,7 @@ export default async function AdminHome() {
           <Link
             key={card.href}
             href={card.href}
-            className="rounded-lg bg-background p-5 text-foreground transition hover:bg-surface"
+            className="rounded-lg bg-surface p-5 text-foreground transition hover:bg-surface-raised"
           >
             <p className="headline text-xl">{card.label}</p>
             <p className="mt-1 text-sm text-muted">{card.detail}</p>

@@ -9,7 +9,7 @@ import type { TeamMember } from "@/lib/data/team";
 type Action = (state: ActionState, data: FormData) => Promise<ActionState>;
 
 const BUTTON =
-  "rounded-md border border-border-strong px-2.5 py-1 text-xs font-medium transition hover:bg-surface disabled:opacity-50";
+  "rounded-md border border-border-strong px-2.5 py-1 text-xs font-medium transition hover:bg-surface-raised disabled:opacity-50";
 
 /**
  * The controls beside one member: mark away or active, remove, and (for
@@ -42,7 +42,7 @@ export function MemberActions({
         onClick={(event) => {
           if (confirmText && !window.confirm(confirmText)) event.preventDefault();
         }}
-        className={`${BUTTON} ${status === "inactive" ? "text-red-700" : ""}`}
+        className={`${BUTTON} ${status === "inactive" ? "text-not-going" : ""}`}
       >
         {label}
       </button>
@@ -66,7 +66,7 @@ export function MemberActions({
               disabled={rolePending}
               onChange={(event) => event.currentTarget.form?.requestSubmit()}
               aria-label={`Role for ${member.name}`}
-              className={`${BUTTON} bg-background`}
+              className={`${BUTTON} bg-surface`}
             >
               {roles.map((role) => (
                 <option key={role} value={role}>
@@ -78,7 +78,7 @@ export function MemberActions({
         )}
       </div>
       {error && (
-        <p role="alert" className="text-xs text-orange-700">
+        <p role="alert" className="text-xs text-warning">
           {error}
         </p>
       )}

@@ -21,26 +21,30 @@ struct MembersView: View {
     var body: some View {
         NavigationStack {
             List {
-                if !newMembers.isEmpty {
-                    newSection
-                }
-                staffSection
-                playersSection
-                if !quiet.isEmpty {
-                    quietSection
-                }
-                inviteSection
-                if !dataService.invites.isEmpty {
-                    pendingSection
-                }
-                if guestCount > 0 {
-                    Section {
-                        Text("\(guestCount) \(guestCount == 1 ? "guest is" : "guests are") following the schedule.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                Group {
+                    if !newMembers.isEmpty {
+                        newSection
+                    }
+                    staffSection
+                    playersSection
+                    if !quiet.isEmpty {
+                        quietSection
+                    }
+                    inviteSection
+                    if !dataService.invites.isEmpty {
+                        pendingSection
+                    }
+                    if guestCount > 0 {
+                        Section {
+                            Text("\(guestCount) \(guestCount == 1 ? "guest is" : "guests are") following the schedule.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
+                .listRowBackground(AppTheme.surface)
             }
+            .fixtureBackground()
             .navigationTitle("Members")
             .scrollDismissesKeyboard(.immediately)
             .refreshable { await load() }
@@ -67,7 +71,7 @@ struct MembersView: View {
                         Button("Keep") {
                             Task { await act(member) { try await dataService.reviewMember(member, keep: true) } }
                         }
-                        .buttonStyle(.borderedProminent)
+                        .primaryButton()
                         .controlSize(.small)
                         Button("Remove", role: .destructive) {
                             Task { await act(member) { try await dataService.reviewMember(member, keep: false) } }
@@ -200,7 +204,7 @@ struct MembersView: View {
                 }
                 if member.status == .away {
                     Text("Away")
-                        .foregroundStyle(AppTheme.availabilityAmber)
+                        .foregroundStyle(AppTheme.warning)
                 }
                 if member.personId == membership.personId {
                     Text("You")

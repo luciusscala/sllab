@@ -28,15 +28,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground"
         >
           Skip to content
         </a>
 
-        <header className="border-b border-white/15">
+        <header className="border-b border-border">
           <div className="container-page flex min-h-12 items-center">
             <Link href="/" className="text-sm font-semibold tracking-wide">
-              Fixture <span className="font-normal text-white/60">by SLLAB</span>
+              Fixture <span className="font-normal text-muted">by SLLAB</span>
             </Link>
           </div>
         </header>

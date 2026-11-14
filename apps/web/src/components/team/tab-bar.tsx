@@ -23,7 +23,7 @@ export function TabBar({ staff }: { staff: boolean }) {
   return (
     <nav
       aria-label="Team"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-white/15 bg-navy pb-[env(safe-area-inset-bottom)] md:static md:border-t-0 md:bg-transparent md:pb-0"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:static md:border-t-0 md:bg-transparent md:pb-0"
     >
       <div className="container-page flex md:justify-start md:gap-6 md:py-3">
         {tabs.map((tab) => {
@@ -38,8 +38,8 @@ export function TabBar({ staff }: { staff: boolean }) {
               aria-current={active ? "page" : undefined}
               className={`flex-1 py-3 text-center text-sm font-semibold transition-colors duration-200 ease-out md:flex-none md:border-b-2 md:py-1 ${
                 active
-                  ? "text-yellow md:border-yellow"
-                  : "text-white/60 hover:text-white md:border-transparent"
+                  ? "text-foreground md:border-foreground"
+                  : "text-muted hover:text-foreground md:border-transparent"
               }`}
             >
               {tab.label}

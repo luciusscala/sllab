@@ -48,6 +48,7 @@ struct EventDetailView: View {
                 ProgressView()
             }
         }
+        .fixtureBackground()
         .navigationTitle(event?.typeLabel ?? "Event")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -128,7 +129,7 @@ struct EventDetailView: View {
                             image.resizable().scaledToFit()
                         } placeholder: {
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.orange.opacity(0.1))
+                                .fill(AppTheme.surfaceRaised)
                         }
                         .frame(width: 40, height: 40)
                         .clipShape(.rect(cornerRadius: 8))
@@ -145,7 +146,7 @@ struct EventDetailView: View {
             } else {
                 Text(event.typeLabel)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(typeColor(for: event.eventType))
+                    .foregroundStyle(AppTheme.eventColor(event.eventType))
             }
 
             Divider()
@@ -172,7 +173,7 @@ struct EventDetailView: View {
                                 Image(systemName: "arrow.up.right.square")
                                     .font(.caption)
                             }
-                            .foregroundStyle(AppTheme.buttonBlue)
+                            .foregroundStyle(AppTheme.text)
                         }
                     } else {
                         Text(locationName)
@@ -191,7 +192,7 @@ struct EventDetailView: View {
             }
         }
         .padding()
-        .background(.fill.tertiary, in: .rect(cornerRadius: 12))
+        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
     }
 
     // MARK: - Availability Picker
@@ -251,7 +252,7 @@ struct EventDetailView: View {
                                 }
                             }
                         }
-                        .background(.fill.tertiary, in: .rect(cornerRadius: 10))
+                        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
                     }
                 }
             }
@@ -289,23 +290,13 @@ struct EventDetailView: View {
                             }
                         }
                     }
-                    .background(.fill.tertiary, in: .rect(cornerRadius: 10))
+                    .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
                 }
             }
         }
     }
 
     // MARK: - Helpers
-
-    private func typeColor(for eventType: String) -> Color {
-        switch eventType {
-        case "game": return AppTheme.gameAccent
-        case "practice": return AppTheme.practiceAccent
-        case "social": return .purple
-        case "tournament": return .yellow
-        default: return .gray
-        }
-    }
 
     private func subtypeLocation(for event: Event) -> String? {
         switch event.eventType {

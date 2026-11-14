@@ -22,40 +22,45 @@ struct GameFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Date & Time") {
-                    DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                }
+                Group {
+                    Section("Date & Time") {
+                        DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                    }
 
-                Section("Opponent") {
-                    if dataService.teams.isEmpty {
-                        Text("Loading teams...")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("Opponent", selection: $selectedOpponentId) {
-                            Text("Select opponent").tag(UUID?.none)
-                            ForEach(dataService.teams) { team in
-                                Text(team.name).tag(UUID?.some(team.id))
+                    Section("Opponent") {
+                        if dataService.teams.isEmpty {
+                            Text("Loading teams...")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Picker("Opponent", selection: $selectedOpponentId) {
+                                Text("Select opponent").tag(UUID?.none)
+                                ForEach(dataService.teams) { team in
+                                    Text(team.name).tag(UUID?.some(team.id))
+                                }
+                            }
+                        }
+                    }
+
+                    Section("Location") {
+                        Toggle("Home Game", isOn: $isHome)
+                            .accentSwitch()
+
+                        if dataService.fields.isEmpty {
+                            Text("Loading fields...")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Picker("Field", selection: $selectedFieldId) {
+                                Text("Select a field").tag(UUID?.none)
+                                ForEach(dataService.fields) { field in
+                                    Text(field.name).tag(UUID?.some(field.id))
+                                }
                             }
                         }
                     }
                 }
-
-                Section("Location") {
-                    Toggle("Home Game", isOn: $isHome)
-
-                    if dataService.fields.isEmpty {
-                        Text("Loading fields...")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("Field", selection: $selectedFieldId) {
-                            Text("Select a field").tag(UUID?.none)
-                            ForEach(dataService.fields) { field in
-                                Text(field.name).tag(UUID?.some(field.id))
-                            }
-                        }
-                    }
-                }
+                .listRowBackground(AppTheme.surface)
             }
+            .fixtureBackground()
             .navigationTitle(isEditing ? "Edit Game" : "Add Game")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

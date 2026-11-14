@@ -28,7 +28,7 @@ export default async function AdminSocialsPage(
   if (!season) {
     return (
       <div className="container-page py-12">
-        <p className="text-white/70">Create a season before adding social events.</p>
+        <p className="text-muted">Create a season before adding social events.</p>
       </div>
     );
   }
@@ -40,7 +40,7 @@ export default async function AdminSocialsPage(
         <SeasonPicker seasons={seasons} selected={season} />
       </div>
 
-      <section className="mt-6 rounded-lg bg-background p-5 text-foreground">
+      <section className="mt-6 rounded-lg bg-surface p-5 text-foreground">
         <h2 className="headline text-lg">Add social event</h2>
 
         <AdminForm action={createSocialEvent} submitLabel="Add social" className="mt-4">
@@ -67,7 +67,7 @@ export default async function AdminSocialsPage(
         <h2 className="headline text-lg">{socials.length} social events</h2>
 
         {socials.map((social) => (
-          <div key={social.id} className="rounded-lg bg-background p-4 text-foreground">
+          <div key={social.id} className="rounded-lg bg-surface p-4 text-foreground">
             <p className="text-sm">
               <span className="font-medium">{formatGameDate(social.date)}</span>
               <span className="text-muted"> / {formatTime(social.date)}</span>

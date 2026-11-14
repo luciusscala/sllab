@@ -62,8 +62,8 @@ export function RepeatingPracticeForm({ fields }: { fields: AdminField[] }) {
                   key={label}
                   className={`cursor-pointer rounded-md border py-2 text-center text-xs font-semibold transition ${
                     on
-                      ? "border-2 border-navy bg-navy/10 text-navy"
-                      : "border-border-strong text-muted hover:bg-surface"
+                      ? "border-2 border-accent bg-accent/40 text-foreground"
+                      : "border-border-strong text-muted hover:bg-surface-raised"
                   }`}
                 >
                   <input

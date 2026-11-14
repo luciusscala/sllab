@@ -70,7 +70,7 @@ export default async function MembersPage() {
 
   return (
     <div className="container-page py-8 sm:py-10">
-      <div className="rounded-xl bg-background p-4 text-foreground sm:p-6">
+      <div className="rounded-xl bg-surface p-4 text-foreground sm:p-6">
         <h1 className="headline text-xl sm:text-2xl">Members</h1>
 
         {newMembers.length > 0 && (

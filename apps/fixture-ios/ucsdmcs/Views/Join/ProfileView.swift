@@ -18,50 +18,55 @@ struct ProfileView: View {
 
     var body: some View {
         Form {
-            Section {
-                TextField("Full name", text: $name)
-                    .textContentType(.name)
-                    .textInputAutocapitalization(.words)
-                Picker("Position", selection: $position) {
-                    ForEach(RosterVocabulary.positions, id: \.self) { Text($0) }
-                }
-                Picker("Class", selection: $playerClass) {
-                    ForEach(RosterVocabulary.classes, id: \.self) { Text($0) }
-                }
-                TextField("Number (optional)", text: $number)
-                    .keyboardType(.numberPad)
-                    .onChange(of: number) { _, value in
-                        let digits = String(value.filter(\.isNumber).prefix(3))
-                        if digits != value { number = digits }
-                    }
-            } header: {
-                Text("About You")
-            } footer: {
-                Text("This is what the roster shows. A captain will confirm you're on the team.")
-            }
-
-            Section {
-                Toggle("Text me reminders", isOn: $smsConsent)
-            } footer: {
-                Text("Captains can text reminders about practices and games. You can turn this off any time by replying STOP.")
-            }
-
-            if let errorMessage {
+            Group {
                 Section {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    TextField("Full name", text: $name)
+                        .textContentType(.name)
+                        .textInputAutocapitalization(.words)
+                    Picker("Position", selection: $position) {
+                        ForEach(RosterVocabulary.positions, id: \.self) { Text($0) }
+                    }
+                    Picker("Class", selection: $playerClass) {
+                        ForEach(RosterVocabulary.classes, id: \.self) { Text($0) }
+                    }
+                    TextField("Number (optional)", text: $number)
+                        .keyboardType(.numberPad)
+                        .onChange(of: number) { _, value in
+                            let digits = String(value.filter(\.isNumber).prefix(3))
+                            if digits != value { number = digits }
+                        }
+                } header: {
+                    Text("About You")
+                } footer: {
+                    Text("This is what the roster shows. A captain will confirm you're on the team.")
                 }
-            }
 
-            Section {
-                JoinButton(title: "Join \(context.team.name)", isLoading: isSaving, isDisabled: trimmedName.isEmpty) {
-                    Task { await save() }
+                Section {
+                    Toggle("Text me reminders", isOn: $smsConsent)
+                        .accentSwitch()
+                } footer: {
+                    Text("Captains can text reminders about practices and games. You can turn this off any time by replying STOP.")
                 }
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
+
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.notGoing)
+                    }
+                }
+
+                Section {
+                    JoinButton(title: "Join \(context.team.name)", isLoading: isSaving, isDisabled: trimmedName.isEmpty) {
+                        Task { await save() }
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                }
             }
+            .listRowBackground(AppTheme.surface)
         }
+        .fixtureBackground()
         .navigationTitle("Your Profile")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(isSaving)

@@ -20,8 +20,8 @@ enum AvailabilityStatus: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .yes: return Color("availabilityGreen")
-        case .no: return Color("availabilityRed")
+        case .yes: return AppTheme.going
+        case .no: return AppTheme.notGoing
         }
     }
 }

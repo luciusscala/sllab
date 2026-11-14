@@ -30,19 +30,22 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                teamSection
-                if membership.role != .guest {
-                    profileSection
+                Group {
+                    teamSection
+                    if membership.role != .guest {
+                        profileSection
+                    }
+                    if session.current?.isCaptain == true {
+                        playerViewSection
+                    }
+                    if !otherTeams.isEmpty {
+                        switchSection
+                    }
+                    accountSection
                 }
-                if session.current?.isCaptain == true {
-                    playerViewSection
-                }
-                if !otherTeams.isEmpty {
-                    switchSection
-                }
-                accountSection
+                .listRowBackground(AppTheme.surface)
             }
-            .tint(AppTheme.practiceAccent)
+            .fixtureBackground()
             .scrollDismissesKeyboard(.immediately)
             .navigationTitle("Settings")
             .disabled(isWorking)
@@ -161,6 +164,7 @@ struct SettingsView: View {
                 get: { session.isViewingAsPlayer },
                 set: { session.isViewingAsPlayer = $0 }
             ))
+            .accentSwitch()
         } footer: {
             Text(session.isViewingAsPlayer
                  ? "You're seeing the app as players do. Your captain tools come back when you turn this off."
@@ -207,7 +211,7 @@ struct SettingsView: View {
                     Text("Leave Team")
                     Spacer()
                     Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(AppTheme.notGoing)
                 }
             }
 

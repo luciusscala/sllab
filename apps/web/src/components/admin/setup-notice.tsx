@@ -2,7 +2,7 @@
 export function SetupNotice() {
   return (
     <div className="container-page py-12">
-      <div className="max-w-xl rounded-lg bg-background p-5 text-foreground">
+      <div className="max-w-xl rounded-lg bg-surface p-5 text-foreground">
         <h1 className="headline text-xl">Admin isn&rsquo;t configured</h1>
         <p className="mt-2 text-sm text-muted">
           Set <code>SUPABASE_SECRET_KEY</code> in <code>.env.local</code> and

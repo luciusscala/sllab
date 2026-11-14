@@ -76,6 +76,7 @@ struct ScheduleView: View {
                     eventList
                 }
             }
+            .fixtureBackground()
             .safeAreaInset(edge: .top) {
                 if membership.needsSeasonAnswer {
                     seasonPrompt
@@ -222,7 +223,7 @@ struct ScheduleView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .primaryButton()
                 Button {
                     Task { await answerSeason(playing: false) }
                 } label: {
@@ -235,7 +236,7 @@ struct ScheduleView: View {
             .disabled(isAnsweringSeason)
         }
         .padding()
-        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
         .padding(.horizontal)
         .padding(.bottom, 8)
     }
@@ -261,23 +262,27 @@ struct ScheduleView: View {
             // Selection is the list's own edit mode, so the checkmarks and
             // taps are the system's rather than a button in every row.
             List(selection: isSelecting ? $selectedEventIDs : nil) {
-                ForEach(groupedEvents, id: \.date) { group in
-                    let isPast = group.date < Calendar.current.startOfDay(for: Date())
-                    Section {
-                        ForEach(group.events) { item in
-                            eventCell(for: item, isPast: isPast)
-                                .tag(item.event.id)
-                                .selectionDisabled(isPast)
-                                .modifier(ScrollEdgeEffect(visibleFrame: listFrame))
-                        }
+                Group {
+                    ForEach(groupedEvents, id: \.date) { group in
+                        let isPast = group.date < Calendar.current.startOfDay(for: Date())
+                        Section {
+                            ForEach(group.events) { item in
+                                eventCell(for: item, isPast: isPast)
+                                    .tag(item.event.id)
+                                    .selectionDisabled(isPast)
+                                    .modifier(ScrollEdgeEffect(visibleFrame: listFrame))
+                            }
 
-                    } header: {
-                        Text(group.date.formatted(.dateTime.weekday(.wide).month().day()))
+                        } header: {
+                            Text(group.date.formatted(.dateTime.weekday(.wide).month().day()))
+                        }
+                        .id(group.date)
+                        .opacity(isPast ? 0.5 : 1)
                     }
-                    .id(group.date)
-                    .opacity(isPast ? 0.5 : 1)
                 }
+                .listRowBackground(AppTheme.surface)
             }
+            .fixtureBackground()
             .listStyle(.insetGrouped)
             .environment(\.editMode, .constant(isSelecting ? .active : .inactive))
             .onGeometryChange(for: CGRect.self) { geometry in
@@ -345,7 +350,7 @@ struct ScheduleView: View {
                 } label: {
                     Label("Going", systemImage: "checkmark")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color("availabilityGreen"))
+                        .foregroundStyle(AppTheme.going)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
                         .contentShape(Rectangle())
@@ -356,7 +361,7 @@ struct ScheduleView: View {
                 } label: {
                     Label("Not Going", systemImage: "xmark")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color("availabilityRed"))
+                        .foregroundStyle(AppTheme.notGoing)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
                         .contentShape(Rectangle())
@@ -369,7 +374,7 @@ struct ScheduleView: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(AppTheme.notGoing)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
                         .contentShape(Rectangle())

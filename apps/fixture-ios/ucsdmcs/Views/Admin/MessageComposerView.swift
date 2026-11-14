@@ -31,77 +31,81 @@ struct MessageComposerView: View {
     var body: some View {
         NavigationStack {
             List {
-                // Message section
-                Section("Message") {
-                    TextEditor(text: $messageText)
-                        .frame(minHeight: 100)
-                }
-
-                // Quick actions
-                Section {
-                    HStack(spacing: 12) {
-                        Button("No Response") {
-                            selectedRosterIds = noResponseIds
-                        }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
-
-                        Button("Select All") {
-                            selectedRosterIds = Set(dataService.activeRoster.map(\.id))
-                        }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
-
-                        Button("Clear") {
-                            selectedRosterIds.removeAll()
-                        }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
+                Group {
+                    // Message section
+                    Section("Message") {
+                        TextEditor(text: $messageText)
+                            .frame(minHeight: 100)
                     }
-                }
 
-                // Roster list with checkboxes
-                Section("Players (\(selectedCount) selected)") {
-                    ForEach(dataService.activeRoster) { entry in
-                        Button {
-                            if selectedRosterIds.contains(entry.id) {
-                                selectedRosterIds.remove(entry.id)
-                            } else {
-                                selectedRosterIds.insert(entry.id)
+                    // Quick actions
+                    Section {
+                        HStack(spacing: 12) {
+                            Button("No Response") {
+                                selectedRosterIds = noResponseIds
                             }
-                        } label: {
-                            HStack {
-                                Image(systemName: selectedRosterIds.contains(entry.id) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(selectedRosterIds.contains(entry.id) ? AppTheme.buttonBlue : .secondary)
+                            .buttonStyle(.bordered)
+                            .font(.caption)
 
-                                if let num = entry.number {
-                                    Text("#\(num)")
-                                        .font(.subheadline.monospaced().weight(.semibold))
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 36, alignment: .trailing)
-                                }
+                            Button("Select All") {
+                                selectedRosterIds = Set(dataService.activeRoster.map(\.id))
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
 
-                                Text(entry.displayName)
-                                    .foregroundStyle(.primary)
+                            Button("Clear") {
+                                selectedRosterIds.removeAll()
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                        }
+                    }
 
-                                Spacer()
-
-                                // Show availability status
-                                if let responses = dataService.availabilityByEvent[eventID],
-                                   let response = responses.first(where: { $0.rosterId == entry.id }) {
-                                    Text(response.status.label)
-                                        .font(.caption)
-                                        .foregroundStyle(response.status.color)
+                    // Roster list with checkboxes
+                    Section("Players (\(selectedCount) selected)") {
+                        ForEach(dataService.activeRoster) { entry in
+                            Button {
+                                if selectedRosterIds.contains(entry.id) {
+                                    selectedRosterIds.remove(entry.id)
                                 } else {
-                                    Text("No response")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
+                                    selectedRosterIds.insert(entry.id)
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: selectedRosterIds.contains(entry.id) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(selectedRosterIds.contains(entry.id) ? AppTheme.text : .secondary)
+
+                                    if let num = entry.number {
+                                        Text("#\(num)")
+                                            .font(.subheadline.monospaced().weight(.semibold))
+                                            .foregroundStyle(.secondary)
+                                            .frame(width: 36, alignment: .trailing)
+                                    }
+
+                                    Text(entry.displayName)
+                                        .foregroundStyle(.primary)
+
+                                    Spacer()
+
+                                    // Show availability status
+                                    if let responses = dataService.availabilityByEvent[eventID],
+                                       let response = responses.first(where: { $0.rosterId == entry.id }) {
+                                        Text(response.status.label)
+                                            .font(.caption)
+                                            .foregroundStyle(response.status.color)
+                                    } else {
+                                        Text("No response")
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .listRowBackground(AppTheme.surface)
             }
+            .fixtureBackground()
             .navigationTitle("Send Reminder")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

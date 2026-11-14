@@ -21,7 +21,9 @@ struct ucsdmcsApp: App {
                 .environment(dataService)
                 .environment(deepLinkManager)
                 .environment(updateChecker)
-                .tint(AppTheme.buttonBlue)
+                // White for text buttons and links; filled buttons and
+                // switches take the accent themselves.
+                .tint(AppTheme.text)
                 .preferredColorScheme(.dark)
                 .task { await session.start() }
                 .onOpenURL { url in

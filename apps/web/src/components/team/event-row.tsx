@@ -19,10 +19,10 @@ export type ScheduleItem = {
 
 /** The app's per-type accent: game orange, practice blue, and so on. */
 export const TYPE_COLOR: Record<EventType, string> = {
-  game: "text-orange-600",
-  practice: "text-blue",
-  social: "text-purple-600",
-  tournament: "text-amber-600",
+  game: "text-game",
+  practice: "text-muted",
+  social: "text-muted",
+  tournament: "text-muted",
 };
 
 const TYPE_LABEL: Record<EventType, string> = {

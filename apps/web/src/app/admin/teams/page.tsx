@@ -18,7 +18,7 @@ export default async function AdminTeamsPage() {
     <div className="container-page py-12">
       <h1 className="headline text-3xl">Teams</h1>
 
-      <section className="mt-6 rounded-lg bg-background p-5 text-foreground">
+      <section className="mt-6 rounded-lg bg-surface p-5 text-foreground">
         <h2 className="headline text-lg">Add team</h2>
 
         <AdminForm action={createTeam} submitLabel="Add team" className="mt-4">
@@ -42,7 +42,7 @@ export default async function AdminTeamsPage() {
         </AdminForm>
       </section>
 
-      <section className="mt-8 rounded-lg bg-background p-5 text-foreground">
+      <section className="mt-8 rounded-lg bg-surface p-5 text-foreground">
         <h2 className="headline text-lg">{teams.length} teams</h2>
         <ul className="mt-3 divide-y divide-border">
           {teams.map((team) => (

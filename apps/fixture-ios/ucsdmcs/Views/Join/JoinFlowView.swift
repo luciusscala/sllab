@@ -85,7 +85,7 @@ struct JoinPage<Content: View>: View {
             if let error {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(AppTheme.notGoing)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
@@ -94,6 +94,7 @@ struct JoinPage<Content: View>: View {
             Spacer()
         }
         .padding()
+        .fixtureBackground()
     }
 }
 
@@ -117,7 +118,7 @@ struct JoinButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
         }
-        .buttonStyle(.borderedProminent)
+        .primaryButton()
         .disabled(isDisabled || isLoading)
     }
 }
@@ -127,7 +128,7 @@ struct JoinFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(12)
-            .background(Color(.systemGray5), in: .rect(cornerRadius: 10))
+            .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
     }
 }
 
@@ -158,11 +159,11 @@ struct TeamBadge: View {
 
     private var initials: some View {
         RoundedRectangle(cornerRadius: size / 5)
-            .fill(AppTheme.buttonBlue.opacity(0.2))
+            .fill(AppTheme.accent)
             .overlay {
                 Text(team.name.split(separator: " ").prefix(3).compactMap { $0.first.map { String($0) } }.joined())
                     .font(.system(size: size / 3, weight: .bold))
-                    .foregroundStyle(AppTheme.buttonBlue)
+                    .foregroundStyle(AppTheme.text)
             }
     }
 }

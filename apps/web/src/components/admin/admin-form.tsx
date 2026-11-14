@@ -38,7 +38,7 @@ export function AdminForm({
       {children}
 
       {state?.error && (
-        <p role="alert" className="mt-3 text-sm text-orange-700">
+        <p role="alert" className="mt-3 text-sm text-warning">
           {state.error}
         </p>
       )}
@@ -52,8 +52,8 @@ export function AdminForm({
         }}
         className={
           destructive
-            ? `${BUTTON} border border-red-300 bg-white text-red-700 hover:bg-red-50`
-            : `mt-4 ${BUTTON} bg-navy text-yellow`
+            ? `${BUTTON} border border-not-going/40 text-not-going hover:bg-not-going/10`
+            : `mt-4 ${BUTTON} bg-accent text-white`
         }
       >
         {pending ? (destructive ? "Deleting…" : "Saving…") : submitLabel}

@@ -28,7 +28,7 @@ export default async function AdminSchedulePage(
   if (!season) {
     return (
       <div className="container-page py-12">
-        <p className="text-white/70">Create a season before adding games.</p>
+        <p className="text-muted">Create a season before adding games.</p>
       </div>
     );
   }
@@ -40,7 +40,7 @@ export default async function AdminSchedulePage(
         <SeasonPicker seasons={seasons} selected={season} />
       </div>
 
-      <section className="mt-6 rounded-lg bg-background p-5 text-foreground">
+      <section className="mt-6 rounded-lg bg-surface p-5 text-foreground">
         <h2 className="headline text-lg">Add game</h2>
 
         {teams.length === 0 ? (
@@ -99,7 +99,7 @@ export default async function AdminSchedulePage(
         <h2 className="headline text-lg">{games.length} games</h2>
 
         {games.map((game) => (
-          <div key={game.id} className="rounded-lg bg-background p-4 text-foreground">
+          <div key={game.id} className="rounded-lg bg-surface p-4 text-foreground">
             <p className="text-sm">
               <span className="font-medium">{formatGameDate(game.gameDate)}</span>
               <span className="text-muted"> / {formatTime(game.gameDate)}</span>

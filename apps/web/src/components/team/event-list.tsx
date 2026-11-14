@@ -77,7 +77,7 @@ export function EventList({
                 <li key={item.id}>
                   <Link
                     href={`/events/${item.id}`}
-                    className="flex items-center px-3 py-3 transition hover:bg-surface active:bg-border"
+                    className="flex items-center px-3 py-3 transition hover:bg-surface-raised active:bg-border"
                   >
                     <EventRow item={item} />
                   </Link>
@@ -100,14 +100,14 @@ export function EventList({
               onClick={() =>
                 setSelected(allSelected ? new Set() : new Set(allIds))
               }
-              className="text-sm font-medium text-blue"
+              className="text-sm font-medium text-foreground"
             >
               {allSelected ? "Deselect All" : "Select All"}
             </button>
             <button
               type="button"
               onClick={exitSelection}
-              className="text-sm font-semibold text-blue"
+              className="text-sm font-semibold text-foreground"
             >
               Done
             </button>
@@ -116,7 +116,7 @@ export function EventList({
           <button
             type="button"
             onClick={() => setSelecting(true)}
-            className="text-sm font-medium text-blue"
+            className="text-sm font-medium text-foreground"
           >
             Select
           </button>
@@ -124,7 +124,7 @@ export function EventList({
       </div>
 
       {state?.error && (
-        <p role="alert" className="mt-3 text-sm text-orange-700">
+        <p role="alert" className="mt-3 text-sm text-warning">
           {state.error}
         </p>
       )}
@@ -138,21 +138,21 @@ export function EventList({
             {group.items.map((item) => (
               <li key={item.id}>
                 {selecting ? (
-                  <label className="flex cursor-pointer items-center gap-3 px-3 py-3 transition hover:bg-surface">
+                  <label className="flex cursor-pointer items-center gap-3 px-3 py-3 transition hover:bg-surface-raised">
                     <input
                       type="checkbox"
                       name="event_id"
                       value={item.id}
                       checked={selected.has(item.id)}
                       onChange={() => toggle(item.id)}
-                      className="size-5 accent-navy"
+                      className="size-5 accent-accent"
                     />
                     <EventRow item={item} />
                   </label>
                 ) : (
                   <Link
                     href={`/events/${item.id}`}
-                    className="flex items-center px-3 py-3 transition hover:bg-surface active:bg-border"
+                    className="flex items-center px-3 py-3 transition hover:bg-surface-raised active:bg-border"
                   >
                     <EventRow item={item} />
                   </Link>
@@ -166,7 +166,7 @@ export function EventList({
       {/* The app's floating capsule. Sticky above the tab bar on phones. */}
       {selecting && selected.size > 0 && (
         <div className="sticky bottom-20 z-10 mt-6 flex justify-center md:bottom-4">
-          <div className="flex items-center overflow-hidden rounded-full border border-border bg-background shadow-lg">
+          <div className="flex items-center overflow-hidden rounded-full border border-border bg-surface shadow-lg">
             {canRespond && (
               <>
                 <button
@@ -205,7 +205,7 @@ export function EventList({
                     event.preventDefault();
                   }
                 }}
-                className={`${BAR_BUTTON} ${canRespond ? "border-l border-border" : ""} text-red-700`}
+                className={`${BAR_BUTTON} ${canRespond ? "border-l border-border" : ""} text-not-going`}
               >
                 Delete
               </button>

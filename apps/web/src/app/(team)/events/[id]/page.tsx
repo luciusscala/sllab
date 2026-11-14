@@ -25,7 +25,7 @@ export const metadata: Metadata = { title: "Event" };
 const STATUSES: AvailabilityStatus[] = ["yes", "no"];
 
 const LINK =
-  "text-sm font-medium text-blue underline underline-offset-4 transition hover:opacity-70";
+  "text-sm font-medium text-foreground underline underline-offset-4 transition hover:opacity-70";
 
 export default async function EventPage(props: PageProps<"/events/[id]">) {
   const membership = await requireMember();
@@ -67,7 +67,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
 
   return (
     <div className="container-page py-8 sm:py-10">
-      <div className="rounded-xl bg-background p-4 text-foreground sm:p-6">
+      <div className="rounded-xl bg-surface p-4 text-foreground sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className={LINK}>
             ‹ Schedule
@@ -96,7 +96,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
         </div>
 
         {/* Info card */}
-        <div className="mt-4 rounded-xl bg-surface p-4">
+        <div className="mt-4 rounded-xl bg-surface-raised p-4">
           {event.type === "game" ? (
             <div className="flex items-center gap-3">
               {event.opponentLogo && (
@@ -126,7 +126,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
                   href={directions}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue"
+                  className="inline-flex items-center gap-1 text-foreground"
                 >
                   {event.location}
                   <span aria-hidden className="text-xs">

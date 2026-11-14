@@ -50,7 +50,7 @@ export default async function AdminRosterPage(
   if (!season) {
     return (
       <div className="container-page py-12">
-        <p className="text-white/70">Create a season before adding players.</p>
+        <p className="text-muted">Create a season before adding players.</p>
       </div>
     );
   }
@@ -62,7 +62,7 @@ export default async function AdminRosterPage(
         <SeasonPicker seasons={seasons} selected={season} />
       </div>
 
-      <section className="mt-6 rounded-lg bg-background p-5 text-foreground">
+      <section className="mt-6 rounded-lg bg-surface p-5 text-foreground">
         <h2 className="headline text-lg">Add player</h2>
 
         <AdminForm action={createPlayer} submitLabel="Add player" className="mt-4">
@@ -106,7 +106,7 @@ export default async function AdminRosterPage(
         <h2 className="headline text-lg">{roster.length} players</h2>
 
         {roster.map((entry) => (
-          <div key={entry.entryId} className="rounded-lg bg-background p-4 text-foreground">
+          <div key={entry.entryId} className="rounded-lg bg-surface p-4 text-foreground">
             <AdminForm action={updatePlayer} submitLabel="Save">
               <input type="hidden" name="person_id" value={entry.personId} />
               <input type="hidden" name="entry_id" value={entry.entryId} />

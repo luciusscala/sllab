@@ -16,7 +16,7 @@ export type Recipient = {
 };
 
 const QUICK =
-  "rounded-md border border-border-strong px-3 py-1.5 text-xs font-medium transition hover:bg-surface";
+  "rounded-md border border-border-strong px-3 py-1.5 text-xs font-medium transition hover:bg-surface-raised";
 
 /**
  * The app's `MessageComposerView`: an editable message, three quick picks
@@ -63,7 +63,7 @@ export function MessageComposer({
         </p>
         <Link
           href={backHref}
-          className="mt-5 inline-block rounded-md bg-navy px-4 py-2 text-sm font-semibold text-yellow"
+          className="mt-5 inline-block rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white"
         >
           OK
         </Link>
@@ -105,7 +105,7 @@ export function MessageComposer({
       <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-muted">
         Players ({selected.size} selected)
       </p>
-      <ul className="mt-2 divide-y divide-border rounded-lg bg-surface">
+      <ul className="mt-2 divide-y divide-border rounded-lg bg-surface-raised">
         {recipients.map((member) => (
           <li key={member.rosterId}>
             <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm">
@@ -115,7 +115,7 @@ export function MessageComposer({
                 value={member.rosterId}
                 checked={selected.has(member.rosterId)}
                 onChange={() => toggle(member.rosterId)}
-                className="size-4 accent-navy"
+                className="size-4 accent-accent"
               />
               <span className="w-9 shrink-0 text-right font-mono text-xs font-semibold text-muted">
                 {member.number !== null ? `#${member.number}` : ""}
@@ -137,7 +137,7 @@ export function MessageComposer({
       </ul>
 
       {state?.error && (
-        <p role="alert" className="mt-3 text-sm text-orange-700">
+        <p role="alert" className="mt-3 text-sm text-warning">
           {state.error}
         </p>
       )}
@@ -145,7 +145,7 @@ export function MessageComposer({
       <button
         type="submit"
         disabled={sendable === 0 || pending}
-        className="mt-4 rounded-md bg-navy px-4 py-2 text-sm font-semibold text-yellow transition hover:opacity-90 disabled:opacity-50"
+        className="mt-4 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Sending…" : `Send (${sendable})`}
       </button>

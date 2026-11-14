@@ -64,7 +64,7 @@ export default async function ProfilePage() {
 
         {/* Unticked by default, as carriers require of an SMS opt-in. */}
         <label className="mt-5 flex cursor-pointer items-start gap-3 text-sm">
-          <input type="checkbox" name="sms_consent" className="mt-0.5 size-4 shrink-0 accent-navy" />
+          <input type="checkbox" name="sms_consent" className="mt-0.5 size-4 shrink-0 accent-accent" />
           <span>
             Text me reminders about practices, games and team events. Usually a
             few a week in season. Reply STOP to any message to opt out.

@@ -15,11 +15,11 @@ struct EventRow: View {
                     image.resizable().scaledToFit()
                 } placeholder: {
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.orange.opacity(0.15))
+                        .fill(AppTheme.surfaceRaised)
                         .overlay {
                             Text(String(item.game?.opponentName.prefix(3).uppercased() ?? ""))
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(AppTheme.textSecondary)
                         }
                 }
                 .frame(width: 32, height: 32)
@@ -90,13 +90,5 @@ struct EventRow: View {
         .padding(.vertical, 2)
     }
 
-    private var typeColor: Color {
-        switch item.event.eventType {
-        case "game": return AppTheme.gameAccent
-        case "practice": return AppTheme.practiceAccent
-        case "social": return .purple
-        case "tournament": return .yellow
-        default: return .gray
-        }
-    }
+    private var typeColor: Color { AppTheme.eventColor(item.event.eventType) }
 }

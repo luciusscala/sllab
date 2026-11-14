@@ -22,7 +22,7 @@ export function SeasonPicker({
         id="season"
         name="season"
         defaultValue={selected?.year ?? seasons[0].year}
-        className="border border-border-strong bg-background px-3 py-1.5 text-sm text-foreground"
+        className="border border-border-strong bg-surface px-3 py-1.5 text-sm text-foreground"
       >
         {seasons.map((option) => (
           <option key={option.id} value={option.year}>
@@ -32,7 +32,7 @@ export function SeasonPicker({
       </select>
       <button
         type="submit"
-        className="bg-navy px-3 py-1.5 text-sm font-semibold text-yellow transition duration-200 ease-out hover:opacity-90 active:scale-[0.98] active:opacity-80"
+        className="bg-accent px-3 py-1.5 text-sm font-semibold text-white transition duration-200 ease-out hover:opacity-90 active:scale-[0.98] active:opacity-80"
       >
         Go
       </button>

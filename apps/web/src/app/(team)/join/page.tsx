@@ -36,7 +36,7 @@ export default async function JoinPage() {
                 <input type="hidden" name="team_id" value={m.teamId} />
                 <button
                   type="submit"
-                  className="flex w-full items-center justify-between py-3 text-left text-sm transition hover:bg-surface"
+                  className="flex w-full items-center justify-between py-3 text-left text-sm transition hover:bg-surface-raised"
                 >
                   <span>
                     <span className="font-medium">{m.teamName}</span>
@@ -59,7 +59,7 @@ export default async function JoinPage() {
               <span className="text-muted">You left {m.teamName}</span>
               <form action={rejoinTeam}>
                 <input type="hidden" name="membership_id" value={m.membershipId} />
-                <button type="submit" className="font-medium text-blue underline underline-offset-4">
+                <button type="submit" className="font-medium text-foreground underline underline-offset-4">
                   Rejoin
                 </button>
               </form>

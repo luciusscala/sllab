@@ -58,6 +58,7 @@ struct CaptainDashboardView: View {
             }
             .padding()
         }
+        .fixtureBackground()
     }
 
     // MARK: - Date Filter Picker
@@ -88,17 +89,17 @@ struct CaptainDashboardView: View {
                 statCell(
                     value: formatPercent(teamAverageResponseRate),
                     label: "Avg Response",
-                    color: AppTheme.buttonBlue
+                    color: AppTheme.text
                 )
                 statCell(
                     value: formatPercent(teamAverageAttendance),
                     label: "Avg Attendance",
-                    color: AppTheme.availabilityGreen
+                    color: AppTheme.going
                 )
             }
         }
         .padding()
-        .background(.fill.tertiary, in: .rect(cornerRadius: 12))
+        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
     }
 
     private func statCell(value: String, label: String, color: Color) -> some View {
@@ -135,7 +136,7 @@ struct CaptainDashboardView: View {
                     }
                 }
             }
-            .background(.fill.tertiary, in: .rect(cornerRadius: 10))
+            .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
         }
     }
 
@@ -163,17 +164,17 @@ struct CaptainDashboardView: View {
                 miniStat(
                     icon: "checkmark.circle.fill",
                     value: "\(player.goingCount)",
-                    color: AppTheme.availabilityGreen
+                    color: AppTheme.going
                 )
                 miniStat(
                     icon: "xmark.circle.fill",
                     value: "\(player.notGoingCount)",
-                    color: AppTheme.availabilityRed
+                    color: AppTheme.notGoing
                 )
                 miniStat(
                     icon: "questionmark.circle.fill",
                     value: "\(player.noResponseCount)",
-                    color: AppTheme.availabilityAmber
+                    color: AppTheme.warning
                 )
                 Spacer()
                 Text("\(formatPercent(player.attendanceRate)) att.")

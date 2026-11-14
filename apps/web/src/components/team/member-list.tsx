@@ -15,7 +15,7 @@ export function MemberList({
   trailing?: (rosterId: string) => React.ReactNode;
 }) {
   return (
-    <ul className="divide-y divide-border rounded-lg bg-surface">
+    <ul className="divide-y divide-border rounded-lg bg-surface-raised">
       {members.map((member) => (
         <li
           key={member.rosterId}

@@ -20,29 +20,33 @@ struct PracticeFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Date & Time") {
-                    DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                }
+                Group {
+                    Section("Date & Time") {
+                        DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                    }
 
-                Section("Location") {
-                    if dataService.fields.isEmpty {
-                        Text("Loading fields...")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("Field", selection: $selectedFieldId) {
-                            Text("Select a field").tag(UUID?.none)
-                            ForEach(dataService.fields) { field in
-                                Text(field.name).tag(UUID?.some(field.id))
+                    Section("Location") {
+                        if dataService.fields.isEmpty {
+                            Text("Loading fields...")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Picker("Field", selection: $selectedFieldId) {
+                                Text("Select a field").tag(UUID?.none)
+                                ForEach(dataService.fields) { field in
+                                    Text(field.name).tag(UUID?.some(field.id))
+                                }
                             }
                         }
                     }
-                }
 
-                Section("Notes") {
-                    TextField("Optional notes", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
+                    Section("Notes") {
+                        TextField("Optional notes", text: $notes, axis: .vertical)
+                            .lineLimit(3...6)
+                    }
                 }
+                .listRowBackground(AppTheme.surface)
             }
+            .fixtureBackground()
             .navigationTitle(isEditing ? "Edit Practice" : "Add Practice")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

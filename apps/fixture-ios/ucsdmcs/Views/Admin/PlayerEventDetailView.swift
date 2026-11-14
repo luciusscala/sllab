@@ -45,6 +45,7 @@ struct PlayerEventDetailView: View {
             }
             .padding()
         }
+        .fixtureBackground()
         .navigationTitle(player.displayName)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -65,13 +66,13 @@ struct PlayerEventDetailView: View {
             }
 
             HStack(spacing: 0) {
-                statCell(value: "\(player.goingCount)", label: "Going", color: AppTheme.availabilityGreen)
-                statCell(value: "\(player.notGoingCount)", label: "Not Going", color: AppTheme.availabilityRed)
-                statCell(value: "\(player.noResponseCount)", label: "No Response", color: AppTheme.availabilityAmber)
+                statCell(value: "\(player.goingCount)", label: "Going", color: AppTheme.going)
+                statCell(value: "\(player.notGoingCount)", label: "Not Going", color: AppTheme.notGoing)
+                statCell(value: "\(player.noResponseCount)", label: "No Response", color: AppTheme.warning)
             }
         }
         .padding()
-        .background(.fill.tertiary, in: .rect(cornerRadius: 12))
+        .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
     }
 
     private func statCell(value: String, label: String, color: Color) -> some View {
@@ -92,20 +93,20 @@ struct PlayerEventDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(AppTheme.availabilityAmber)
+                    .foregroundStyle(AppTheme.warning)
                 Text("Missed Events (\(missedEvents.count))")
                     .font(.headline)
             }
 
             VStack(spacing: 0) {
                 ForEach(Array(missedEvents.enumerated()), id: \.element.event.id) { index, item in
-                    eventRow(item.event, tag: item.reason, tagColor: item.reason == "No Response" ? AppTheme.availabilityAmber : AppTheme.availabilityRed)
+                    eventRow(item.event, tag: item.reason, tagColor: item.reason == "No Response" ? AppTheme.warning : AppTheme.notGoing)
                     if index < missedEvents.count - 1 {
                         Divider().padding(.leading, 12)
                     }
                 }
             }
-            .background(.fill.tertiary, in: .rect(cornerRadius: 10))
+            .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
         }
     }
 
@@ -115,20 +116,20 @@ struct PlayerEventDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(AppTheme.availabilityGreen)
+                    .foregroundStyle(AppTheme.going)
                 Text("Attended (\(attendedEvents.count))")
                     .font(.headline)
             }
 
             VStack(spacing: 0) {
                 ForEach(Array(attendedEvents.enumerated()), id: \.element.id) { index, event in
-                    eventRow(event, tag: "Going", tagColor: AppTheme.availabilityGreen)
+                    eventRow(event, tag: "Going", tagColor: AppTheme.going)
                     if index < attendedEvents.count - 1 {
                         Divider().padding(.leading, 12)
                     }
                 }
             }
-            .background(.fill.tertiary, in: .rect(cornerRadius: 10))
+            .background(AppTheme.surface, in: .rect(cornerRadius: AppTheme.cornerRadius))
         }
     }
 

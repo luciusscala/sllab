@@ -16,16 +16,16 @@ export function PageSkeleton({ rows = 6 }: { rows?: number }) {
     <div className="container-page py-8 sm:py-10">
       <div
         role="status"
-        className="rounded-xl bg-background p-4 text-foreground sm:p-6"
+        className="rounded-xl bg-surface p-4 text-foreground sm:p-6"
       >
         <span className="sr-only">Loading</span>
 
         <div className="h-7 w-2/3 max-w-xs animate-pulse rounded bg-border sm:h-8" />
-        <div className="mt-4 h-11 animate-pulse bg-surface" />
+        <div className="mt-4 h-11 animate-pulse bg-surface-raised" />
 
         <div className="mt-4 space-y-2" aria-hidden="true">
           {Array.from({ length: rows }, (_, row) => (
-            <div key={row} className="h-12 animate-pulse bg-surface" />
+            <div key={row} className="h-12 animate-pulse bg-surface-raised" />
           ))}
         </div>
       </div>

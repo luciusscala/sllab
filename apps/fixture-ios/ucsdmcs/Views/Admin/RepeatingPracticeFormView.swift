@@ -40,74 +40,78 @@ struct RepeatingPracticeFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Days of Week") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-                        ForEach(dayNames, id: \.0) { day in
-                            Button {
-                                if selectedDays.contains(day.0) {
-                                    selectedDays.remove(day.0)
-                                } else {
-                                    selectedDays.insert(day.0)
+                Group {
+                    Section("Days of Week") {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                            ForEach(dayNames, id: \.0) { day in
+                                Button {
+                                    if selectedDays.contains(day.0) {
+                                        selectedDays.remove(day.0)
+                                    } else {
+                                        selectedDays.insert(day.0)
+                                    }
+                                } label: {
+                                    Text(day.1)
+                                        .font(.caption.weight(.semibold))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            selectedDays.contains(day.0)
+                                                ? AnyShapeStyle(.tint.opacity(0.15))
+                                                : AnyShapeStyle(.clear),
+                                            in: .rect(cornerRadius: 8)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(
+                                                    selectedDays.contains(day.0) ? Color.accentColor : Color.secondary.opacity(0.3),
+                                                    lineWidth: selectedDays.contains(day.0) ? 2 : 1
+                                                )
+                                        )
                                 }
-                            } label: {
-                                Text(day.1)
-                                    .font(.caption.weight(.semibold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        selectedDays.contains(day.0)
-                                            ? AnyShapeStyle(.tint.opacity(0.15))
-                                            : AnyShapeStyle(.clear),
-                                        in: .rect(cornerRadius: 8)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(
-                                                selectedDays.contains(day.0) ? Color.accentColor : Color.secondary.opacity(0.3),
-                                                lineWidth: selectedDays.contains(day.0) ? 2 : 1
-                                            )
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-
-                Section("Date Range") {
-                    DatePicker("Start", selection: $startDate, displayedComponents: .date)
-                    DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: .date)
-                }
-
-                Section("Time") {
-                    DatePicker("Practice Time", selection: $time, displayedComponents: .hourAndMinute)
-                }
-
-                Section("Location") {
-                    if dataService.fields.isEmpty {
-                        Text("Loading fields...")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("Field", selection: $selectedFieldId) {
-                            Text("Select a field").tag(UUID?.none)
-                            ForEach(dataService.fields) { field in
-                                Text(field.name).tag(UUID?.some(field.id))
+                                .buttonStyle(.plain)
                             }
                         }
                     }
-                }
 
-                Section("Notes") {
-                    TextField("Optional notes", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
-                }
+                    Section("Date Range") {
+                        DatePicker("Start", selection: $startDate, displayedComponents: .date)
+                        DatePicker("End", selection: $endDate, in: startDate..., displayedComponents: .date)
+                    }
 
-                if practiceCount > 0 {
-                    Section {
-                        Text("This will create **\(practiceCount)** practices")
-                            .foregroundStyle(.secondary)
+                    Section("Time") {
+                        DatePicker("Practice Time", selection: $time, displayedComponents: .hourAndMinute)
+                    }
+
+                    Section("Location") {
+                        if dataService.fields.isEmpty {
+                            Text("Loading fields...")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Picker("Field", selection: $selectedFieldId) {
+                                Text("Select a field").tag(UUID?.none)
+                                ForEach(dataService.fields) { field in
+                                    Text(field.name).tag(UUID?.some(field.id))
+                                }
+                            }
+                        }
+                    }
+
+                    Section("Notes") {
+                        TextField("Optional notes", text: $notes, axis: .vertical)
+                            .lineLimit(3...6)
+                    }
+
+                    if practiceCount > 0 {
+                        Section {
+                            Text("This will create **\(practiceCount)** practices")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
+                .listRowBackground(AppTheme.surface)
             }
+            .fixtureBackground()
             .navigationTitle("Repeating Practices")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

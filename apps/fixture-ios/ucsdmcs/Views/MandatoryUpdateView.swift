@@ -27,12 +27,13 @@ struct MandatoryUpdateView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
             }
-            .buttonStyle(.borderedProminent)
+            .primaryButton()
             .padding(.horizontal, 40)
 
             Spacer()
             Spacer()
         }
         .padding()
+        .fixtureBackground()
     }
 }
