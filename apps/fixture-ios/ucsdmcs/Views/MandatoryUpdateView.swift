@@ -3,7 +3,7 @@ import SwiftUI
 struct MandatoryUpdateView: View {
     @Environment(\.openURL) private var openURL
 
-    // Replace with your actual App Store URL once published
+    /// Fixture's App Store page.
     private let appStoreURL = URL(string: "https://apps.apple.com/us/app/fixture-management/id6812923949")!
 
     var body: some View {

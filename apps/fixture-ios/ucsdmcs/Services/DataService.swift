@@ -118,7 +118,6 @@ final class DataService {
                 return $0.displayName < $1.displayName
             }
         } catch {
-            print("fetchRoster error: \(error)")
             errorMessage = "Roster: \(error.localizedDescription)"
         }
     }
@@ -328,7 +327,8 @@ final class DataService {
                 break
             }
         } catch {
-            print("Failed to fetch subtype for event \(event.id): \(error)")
+            // A missing subtype leaves the event with its bare details; the
+            // list still shows it.
         }
     }
 

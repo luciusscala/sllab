@@ -28,6 +28,7 @@ It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.app
 
 **App behavior**
 - Event links (`app.sllab.io/events/<id>`, and `app.ucsdmcs.com/events/<id>` from older reminders) open the event directly in the app.
+- `PrivacyInfo.xcprivacy` is the privacy manifest Apple checks at upload: no tracking, the phone number and user id as collected data, and `UserDefaults` declared for the app's own use.
 - A minimum supported version is stored in the database. Older builds show an update screen. If the check can't reach the server, the app opens normally rather than blocking players.
 
 ## Requirements
