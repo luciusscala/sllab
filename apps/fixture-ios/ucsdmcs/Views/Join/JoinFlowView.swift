@@ -135,35 +135,3 @@ struct JoinFieldStyle: ViewModifier {
 extension View {
     func joinField() -> some View { modifier(JoinFieldStyle()) }
 }
-
-/// A team's crest, or its initials while the image loads or if it has none.
-struct TeamBadge: View {
-    let team: TeamSummary
-    var size: CGFloat = 72
-
-    var body: some View {
-        Group {
-            if let path = team.logoPath, let url = SupabaseConfig.storageURL(for: path) {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFit()
-                } placeholder: {
-                    initials
-                }
-            } else {
-                initials
-            }
-        }
-        .frame(width: size, height: size)
-        .clipShape(.rect(cornerRadius: size / 5))
-    }
-
-    private var initials: some View {
-        RoundedRectangle(cornerRadius: size / 5)
-            .fill(AppTheme.accent)
-            .overlay {
-                Text(team.name.split(separator: " ").prefix(3).compactMap { $0.first.map { String($0) } }.joined())
-                    .font(.system(size: size / 3, weight: .bold))
-                    .foregroundStyle(AppTheme.text)
-            }
-    }
-}

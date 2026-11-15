@@ -76,6 +76,7 @@ struct ProfileView: View {
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }
+        Keyboard.dismiss()
         do {
             let profile = JoinProfile(
                 name: trimmedName,

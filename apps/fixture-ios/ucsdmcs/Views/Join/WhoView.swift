@@ -23,9 +23,6 @@ struct WhoView: View {
             subtitle: hasPhone ? "Join as \(PhoneNumber.display(session.phone ?? ""))?" : "Are you on the team?",
             error: errorMessage
         ) {
-            TeamBadge(team: context.team)
-                .padding(.bottom, 8)
-
             JoinButton(title: hasPhone ? "Join Team" : "I'm on the team", isLoading: isJoining, isDisabled: isBrowsing) {
                 if hasPhone {
                     Task { await joinAsMyself() }
@@ -65,6 +62,7 @@ struct WhoView: View {
         isJoining = true
         errorMessage = nil
         defer { isJoining = false }
+        Keyboard.dismiss()
         do {
             try await JoinFlowView.finish(context, session: session, path: $path)
         } catch {
@@ -76,6 +74,7 @@ struct WhoView: View {
         isBrowsing = true
         errorMessage = nil
         defer { isBrowsing = false }
+        Keyboard.dismiss()
         do {
             if !(session.state == .signedIn && session.isAnonymous) {
                 try await session.signInAsGuest()

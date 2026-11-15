@@ -117,6 +117,7 @@ struct TeamCodeView: View {
         rejoining = membership.id
         errorMessage = nil
         defer { rejoining = nil }
+        Keyboard.dismiss()
         do {
             try await session.setMyStatus(.active, membership: membership)
         } catch {

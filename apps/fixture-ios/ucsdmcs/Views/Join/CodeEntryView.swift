@@ -61,12 +61,17 @@ struct CodeEntryView: View {
         isVerifying = true
         errorMessage = nil
         defer { isVerifying = false }
+        // A successful verify replaces this screen with the team, so the
+        // keyboard has to be gone before then or it's left with no field.
+        isFocused = false
+        Keyboard.dismiss()
         do {
             try await session.verify(phone: phone, code: code)
             try await JoinFlowView.finish(context, session: session, path: $path)
         } catch {
             errorMessage = Session.explain(error)
             code = ""
+            isFocused = true
         }
     }
 
