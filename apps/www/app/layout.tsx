@@ -48,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-bg text-fg">
         <RevealProvider />
         <Header />
-        <main className="flex-1">
+        <main className="flex flex-1 flex-col">
           <PageTransition>{children}</PageTransition>
         </main>
         <Footer />

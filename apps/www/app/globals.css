@@ -203,74 +203,69 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Platform graphic
+   Hive graphic
    -------------------------------------------------------------------------- */
 
-.pg-mono {
+.hive {
+  height: auto;
+  max-height: calc(100dvh - 15rem);
+  color: var(--fg);
+  overflow: visible;
+}
+
+.hive-line {
+  fill: none;
+  stroke: var(--fg);
+  stroke-opacity: 0.22;
+  stroke-width: 1;
+}
+
+.hive-cell {
+  fill: color-mix(in srgb, var(--fg) 4%, var(--bg));
+  stroke: var(--fg);
+  stroke-opacity: 0.75;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--fg) 22%, transparent));
+  transition: fill 600ms var(--ease-smooth);
+}
+
+.hive-cell-small {
+  stroke-opacity: 0.5;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--fg) 14%, transparent));
+}
+
+.hive-icon {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hive-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  letter-spacing: 0.02em;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  fill: var(--muted);
 }
 
-.pg-icon-bg {
-  fill: color-mix(in srgb, var(--fg) 6%, transparent);
+.hive-dot {
+  fill: var(--fg);
 }
 
-.pg-core-sub {
-  fill: color-mix(in srgb, var(--bg) 62%, transparent);
+.hive-dot-glow {
+  fill: var(--fg);
+  opacity: 0.55;
 }
 
-.pg-core-chip {
-  fill: color-mix(in srgb, var(--bg) 14%, transparent);
-}
-
-/* Cards: the next one rises in while the last one sinks away. */
-.pg-card-in {
-  animation: pg-card-in 640ms var(--ease-smooth) both;
-}
-
-.pg-card-out {
-  animation: pg-card-out 420ms var(--ease-smooth) both;
-  pointer-events: none;
-}
-
-@keyframes pg-card-in {
-  from {
-    opacity: 0;
-    transform: translate(var(--pg-card-x, 0), calc(var(--pg-card-y, 0) + 14px));
-  }
-}
-
-@keyframes pg-card-out {
-  to {
-    opacity: 0;
-    transform: translate(var(--pg-card-x, 0), calc(var(--pg-card-y, 0) - 10px));
-  }
-}
-
-.pg-progress {
-  width: 100%;
-  transform-origin: left;
-  animation: pg-progress linear forwards;
-}
-
-@keyframes pg-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-.pg-caption {
-  animation: pg-caption 700ms var(--ease-smooth) both;
-}
-
-@keyframes pg-caption {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 8px, 0);
-  }
+/* Lives on the main axis: the header, the page and the footer share one
+   viewport with no scroll, so the page stretches to fill what's left. */
+.page-enter {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 /* --------------------------------------------------------------------------
@@ -295,5 +290,9 @@ body {
 
   .mask-line > span {
     transform: none;
+  }
+
+  .hive-packet {
+    display: none;
   }
 }

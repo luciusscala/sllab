@@ -6,7 +6,7 @@ Built with Next.js 16, React 19 and Tailwind CSS 4. It has no backend and no env
 
 ## Pages
 
-- **Home** (`/`): the whole site. A hero, then a diagram of how SLLAB works (`components/platform-graphic.tsx`): the apps a team uses (Fixture for captains and players, Film, the league feed) stream without pause into one database, and out of it come the things a club could never keep by hand, drawn as cards that cycle: a game with everything attached, a player profile, standings, power rankings, season stats and attendance. It is hand-written SVG driven by one `requestAnimationFrame` loop, with a taller layout for phones and a still, click-through version for reduced motion. `/contact` redirects here.
+- **Home** (`/`): the whole site, in one viewport with nothing to scroll. A hive (`components/hive-graphic.tsx`): three cells sharing walls for Fixture, Film and the league feed, the places a team's season is recorded, and from the seam between them one line that splits three ways and carries lit packets to the smaller cells at the end, standings, stats and the club's site. Under it, one line of text. The hive is plain SVG with SMIL motion, so it's a Server Component with no script; the same geometry is drawn left to right on wide screens and top to bottom on phones, and the packets stay still for reduced motion. `/contact` redirects here.
 - **Fixture's policies** (`/fixture/privacy`, `/fixture/terms`, `/fixture/support`): the privacy policy, terms and support page for [Fixture by SLLAB](../fixture-ios), linked from the App Store listing and from club sites. They stay because Apple requires them.
 
 The site has light and dark themes with a toggle, scroll-triggered reveal animations, and transitions between pages.
@@ -22,7 +22,7 @@ npm run dev    # http://localhost:3000
 
 ```
 app/          Pages, layout and global styles
-components/   The platform graphic, theme toggle, reveal animations, page transitions, header, footer, shared UI
+components/   The hive graphic, theme toggle, reveal animations, page transitions, header, footer, shared UI
 lib/          Theme handling and the contact address
 ```
 
