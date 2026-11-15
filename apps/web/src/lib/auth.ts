@@ -30,7 +30,6 @@ export type Membership = {
   personName: string;
   role: Role;
   status: Status;
-  isNew: boolean;
   /** This season's roster row, for players and captains; null for staff,
    *  guests, and a player who hasn't confirmed they're back this season. */
   rosterId: string | null;
@@ -45,7 +44,6 @@ type MembershipRow = {
   person_name: string;
   role: Role;
   status: Status;
-  is_new: boolean;
   roster_id: string | null;
 };
 
@@ -58,7 +56,6 @@ export const toMembership = (row: MembershipRow): Membership => ({
   personName: row.person_name,
   role: row.role,
   status: row.status,
-  isNew: row.is_new,
   rosterId: row.roster_id,
 });
 

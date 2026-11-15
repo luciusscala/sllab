@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import {
   cancelInvite,
   inviteMember,
-  reviewMember,
   setMemberRole,
   setMemberStatus,
 } from "@/app/(team)/actions";
@@ -47,11 +46,10 @@ export default async function MembersPage() {
   const numberOf = new Map(roster.map((m) => [m.personId, m.number]));
   const rosterIdOf = new Map(roster.map((m) => [m.personId, m.rosterId]));
 
-  const newMembers = members.filter((m) => m.isNew && m.status !== "inactive");
   const staff = members.filter(
     (m) => (m.role === "captain" || m.role === "coach") && m.status !== "inactive",
   );
-  const players = members.filter((m) => m.role === "player" && m.status !== "inactive" && !m.isNew);
+  const players = members.filter((m) => m.role === "player" && m.status !== "inactive");
   const guests = members.filter((m) => m.role === "guest" && m.status !== "inactive");
   const inactive = members.filter((m) => m.role !== "guest" && m.status === "inactive");
   const quiet =
@@ -73,40 +71,6 @@ export default async function MembersPage() {
     <div className="container-page py-8 sm:py-10">
       <div className="card p-4 text-foreground sm:p-6">
         <h1 className="headline text-xl sm:text-2xl">Members</h1>
-
-        {newMembers.length > 0 && (
-          <>
-            <SectionHeading>New members</SectionHeading>
-            <p className="mt-2 text-xs text-muted">
-              Joined with the team code. Keep them, or remove anyone who shouldn&rsquo;t be here.
-            </p>
-            <ul className="mt-3 divide-y divide-border">
-              {newMembers.map((m) => (
-                <li key={m.membershipId} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                  <span>
-                    {label(m)} <span className="text-muted">· {ROLE_LABEL[m.role]}</span>
-                  </span>
-                  <div className="flex gap-2">
-                    <ActionForm action={reviewMember} submitLabel="Keep" className="inline">
-                      <input type="hidden" name="membership_id" value={m.membershipId} />
-                      <input type="hidden" name="keep" value="true" />
-                    </ActionForm>
-                    <ActionForm
-                      action={reviewMember}
-                      submitLabel="Remove"
-                      destructive
-                      confirm={`Remove ${m.name} from the team and this season's roster?`}
-                      className="inline"
-                    >
-                      <input type="hidden" name="membership_id" value={m.membershipId} />
-                      <input type="hidden" name="keep" value="false" />
-                    </ActionForm>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
 
         <SectionHeading>Staff</SectionHeading>
         <ul className="mt-3 divide-y divide-border">

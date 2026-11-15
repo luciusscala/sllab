@@ -100,11 +100,11 @@ export async function savePlayer(_state: FormState, data: FormData): Promise<For
     return { error: dbMessage(rosterError) };
   }
 
-  // On the roster means on the team: an active player, already reviewed.
+  // On the roster means on the team: an active player.
   await client
     .from("memberships")
     .upsert(
-      { team_id: teamId, person_id: inserted.id, role: "player", status: "active", is_new: false },
+      { team_id: teamId, person_id: inserted.id, role: "player", status: "active" },
       { onConflict: "team_id,person_id" },
     );
 

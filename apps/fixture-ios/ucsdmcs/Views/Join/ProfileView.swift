@@ -38,7 +38,7 @@ struct ProfileView: View {
                 } header: {
                     Text("About You")
                 } footer: {
-                    Text("This is what the roster shows. A captain will confirm you're on the team.")
+                    Text("This is what the roster shows.")
                 }
 
                 Section {

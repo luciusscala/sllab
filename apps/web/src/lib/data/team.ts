@@ -150,7 +150,6 @@ export type TeamMember = {
   name: string;
   role: Role;
   status: Status;
-  isNew: boolean;
   joinedAt: string;
 };
 
@@ -158,7 +157,6 @@ type MemberRow = {
   id: string;
   role: Role;
   status: Status;
-  is_new: boolean;
   created_at: string;
   person: { id: string; name: string } | null;
 };
@@ -167,7 +165,7 @@ type MemberRow = {
 export async function getMembers(teamId: string): Promise<TeamMember[]> {
   const { data, error } = await (await client())
     .from("memberships")
-    .select("id, role, status, is_new, created_at, person:people(id, name)")
+    .select("id, role, status, created_at, person:people(id, name)")
     .eq("team_id", teamId);
 
   if (error) throw new Error(`Failed to load members: ${error.message}`);
@@ -183,7 +181,6 @@ export async function getMembers(teamId: string): Promise<TeamMember[]> {
           name: person.name,
           role: row.role,
           status: row.status,
-          isNew: row.is_new,
           joinedAt: row.created_at,
         },
       ];

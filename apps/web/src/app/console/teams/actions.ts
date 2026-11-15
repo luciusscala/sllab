@@ -105,7 +105,7 @@ export async function inviteCaptain(_state: FormState, data: FormData): Promise<
     if (membership) {
       const { error } = await client
         .from("memberships")
-        .update({ role: "captain", status: "active", is_new: false })
+        .update({ role: "captain", status: "active" })
         .eq("id", membership.id);
       if (error) return { error: error.message };
       revalidatePath(PATH);

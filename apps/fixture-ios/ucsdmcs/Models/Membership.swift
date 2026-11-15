@@ -43,7 +43,6 @@ struct Membership: Identifiable, Codable, Hashable {
     let personName: String
     let role: Role
     let status: MemberStatus
-    let isNew: Bool
     /// This season's roster row for players and captains; nil for staff,
     /// guests, and a player who hasn't confirmed they're back this season.
     let rosterId: UUID?
@@ -65,7 +64,7 @@ struct Membership: Identifiable, Codable, Hashable {
         Membership(
             membershipId: membershipId, teamId: teamId, teamName: teamName, teamLogo: teamLogo,
             personId: personId, personName: personName, role: .player, status: status,
-            isNew: isNew, rosterId: rosterId
+            rosterId: rosterId
         )
     }
 
@@ -77,7 +76,6 @@ struct Membership: Identifiable, Codable, Hashable {
         case teamLogo = "team_logo"
         case personId = "person_id"
         case personName = "person_name"
-        case isNew = "is_new"
         case rosterId = "roster_id"
     }
 }
@@ -124,7 +122,6 @@ struct TeamMember: Identifiable, Codable, Hashable {
     let personId: UUID
     let role: Role
     let status: MemberStatus
-    let isNew: Bool
     let createdAt: Date
     let people: Person?
 
@@ -133,7 +130,6 @@ struct TeamMember: Identifiable, Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, role, status, people
         case personId = "person_id"
-        case isNew = "is_new"
         case createdAt = "created_at"
     }
 }

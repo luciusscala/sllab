@@ -278,15 +278,6 @@ async function memberRpc(fn: string, args: Record<string, unknown>): Promise<Act
   return null;
 }
 
-/** Keep (true) or Remove (false) from the New Members list. */
-export async function reviewMember(_state: ActionState, data: FormData): Promise<ActionState> {
-  await requireStaff();
-  return memberRpc("review_member", {
-    p_membership_id: text(data, "membership_id"),
-    p_keep: data.get("keep") === "true",
-  });
-}
-
 export async function setMemberStatus(_state: ActionState, data: FormData): Promise<ActionState> {
   await requireStaff();
   return memberRpc("set_member_status", {

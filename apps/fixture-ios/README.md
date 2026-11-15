@@ -61,7 +61,7 @@ The Xcode project and source folder are still named `ucsdmcs`, the app's origina
 ## Backend
 
 - **Supabase Auth** signs people in by phone (SMS one-time code) or anonymously as a guest. The session lives in the Keychain and refreshes itself; the app never sees a password or a token it has to protect.
-- **Supabase** stores teams, memberships, rosters, events and availability. The app reads and writes it directly as the signed-in person, and row-level security decides what each role may see and change. Joining, leaving, reviewing members and changing roles go through database functions documented in [`supabase/README.md`](../../supabase/README.md). Phone numbers live in a table the app has no access to.
+- **Supabase** stores teams, memberships, rosters, events and availability. The app reads and writes it directly as the signed-in person, and row-level security decides what each role may see and change. Joining, leaving, removing members and changing roles go through database functions documented in [`supabase/README.md`](../../supabase/README.md). Phone numbers live in a table the app has no access to.
 - **The [SLLAB API](../api)** (`api.sllab.io`) sends SMS reminders. The app presents its Supabase access token; the API checks it belongs to a captain or coach of the team and looks the numbers up itself.
 - **Universal links** are allowed by `/.well-known/apple-app-site-association`, served by [`apps/web`](../web) for app.sllab.io and by [`apps/club-sites`](../club-sites) for the old app.ucsdmcs.com links.
 

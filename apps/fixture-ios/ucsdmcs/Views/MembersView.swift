@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Who's on the team, for captains and coaches: new joins to confirm, the
-/// staff, the players, who's gone quiet, and numbers added ahead of time.
+/// Who's on the team, for captains and coaches: the staff, the players,
+/// who's gone quiet, and numbers added ahead of time.
 struct MembersView: View {
     let membership: Membership
     @Environment(DataService.self) private var dataService
@@ -10,20 +10,12 @@ struct MembersView: View {
     @State private var isInviting = false
     @State private var busyMember: UUID?
     @State private var errorMessage: String?
-    @State private var removal: Removal?
-
-    /// A Remove waiting on its confirmation. From the New Members list it
-    /// also drops this season's roster row, which is why it asks.
-    private struct Removal: Identifiable {
-        let member: TeamMember
-        let fromReview: Bool
-        var id: UUID { member.id }
-    }
+    /// A Remove waiting on its confirmation.
+    @State private var removal: TeamMember?
 
     private var open: [TeamMember] { dataService.members.filter { $0.status != .inactive } }
-    private var newMembers: [TeamMember] { open.filter { $0.isNew && $0.role != .guest } }
-    private var staff: [TeamMember] { open.filter { $0.role.isStaff && !$0.isNew } }
-    private var players: [TeamMember] { open.filter { $0.role == .player && !$0.isNew } }
+    private var staff: [TeamMember] { open.filter { $0.role.isStaff } }
+    private var players: [TeamMember] { open.filter { $0.role == .player } }
     private var guestCount: Int { open.filter { $0.role == .guest }.count }
     private var inactive: [TeamMember] { dataService.members.filter { $0.status == .inactive && $0.role != .guest } }
     private var quiet: [RosterEntry] { dataService.quietPlayers() }
@@ -32,9 +24,6 @@ struct MembersView: View {
         NavigationStack {
             List {
                 Group {
-                    if !newMembers.isEmpty {
-                        newSection
-                    }
                     staffSection
                     playersSection
                     if !quiet.isEmpty {
@@ -68,61 +57,21 @@ struct MembersView: View {
                 Text(errorMessage ?? "")
             }
             .confirmationDialog(
-                "Remove \(removal?.member.name ?? "")?",
+                "Remove \(removal?.name ?? "")?",
                 isPresented: Binding(get: { removal != nil }, set: { if !$0 { removal = nil } }),
                 titleVisibility: .visible,
                 presenting: removal
-            ) { removal in
+            ) { member in
                 Button("Remove", role: .destructive) {
-                    Task {
-                        await act(removal.member) {
-                            if removal.fromReview {
-                                try await dataService.reviewMember(removal.member, keep: false)
-                            } else {
-                                try await dataService.setStatus(.inactive, for: removal.member)
-                            }
-                        }
-                    }
+                    Task { await act(member) { try await dataService.setStatus(.inactive, for: member) } }
                 }
-            } message: { removal in
-                Text(removal.fromReview
-                     ? "They'll be taken off the team and this season's roster."
-                     : "They'll stay on the roster but stop getting reminders and drop off the response lists. You can reactivate them here any time.")
+            } message: { _ in
+                Text("They'll stay on the roster but stop getting reminders and drop off the response lists. You can reactivate them here any time.")
             }
         }
     }
 
     // MARK: - Sections
-
-    private var newSection: some View {
-        Section {
-            ForEach(newMembers) { member in
-                HStack {
-                    memberLabel(member)
-                    Spacer()
-                    if busyMember == member.id {
-                        ProgressView()
-                    } else {
-                        Button("Keep") {
-                            Task { await act(member) { try await dataService.reviewMember(member, keep: true) } }
-                        }
-                        .primaryButton()
-                        .controlSize(.small)
-                        Button("Remove", role: .destructive) {
-                            removal = Removal(member: member, fromReview: true)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        } header: {
-            Text("New Members")
-        } footer: {
-            Text("Joined with the team code. Keep them or take them off the roster.")
-        }
-    }
 
     private var staffSection: some View {
         Section("Staff") {
@@ -161,7 +110,7 @@ struct MembersView: View {
                             ProgressView()
                         } else {
                             Button("Remove", role: .destructive) {
-                                removal = Removal(member: member, fromReview: false)
+                                removal = member
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -308,7 +257,7 @@ struct MembersView: View {
         }
 
         Button(role: .destructive) {
-            removal = Removal(member: member, fromReview: false)
+            removal = member
         } label: { Label("Remove from Team", systemImage: "person.badge.minus") }
     }
 

@@ -32,7 +32,6 @@ What a client calls, all `SECURITY DEFINER` functions reachable through PostgRES
 | `continue_season(team)` | player | "Yes, I'm playing this season": carries last season's roster row forward |
 | `set_member_status(membership, status)` | self, or staff | Leave and rejoin; a captain's Remove and Reactivate. Staff can't touch other staff; captains can |
 | `set_member_role(membership, role)` | captain | Promote to captain, add or remove a coach |
-| `review_member(membership, keep)` | staff | The New Members list: Keep or Remove |
 | `invite_member(team, phone, role)` | staff (captains for staff roles) | Pre-add by number; the role applies when that number signs in |
 | `delete_my_account()` | signed in | Keeps roster history, drops the number and the sign-in, closes memberships |
 
