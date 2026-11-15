@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { LocalTime } from "@/components/local-time";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Footer() {
   return (
@@ -13,10 +12,7 @@ export function Footer() {
         <Link href="/fixture/privacy" className="link-wipe">PRIVACY</Link>
         <Link href="/fixture/terms" className="link-wipe">TERMS</Link>
       </nav>
-      <div className="flex items-center gap-5">
-        <LocalTime />
-        <ThemeToggle />
-      </div>
+      <LocalTime />
     </footer>
   );
 }
