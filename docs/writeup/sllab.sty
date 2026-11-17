@@ -3,7 +3,7 @@
 % Adapted for XeTeX (Tectonic) from paper.sty in Pascal Michaillat's
 % latex-paper template, https://github.com/pmichaillat/latex-paper.
 % Changes: pdfTeX-only font setup removed; theorem and appendix-theorem
-% machinery dropped; TikZ styles and a media placeholder added.
+% machinery dropped; TikZ styles added.
 %
 % MIT License. Copyright (c) 2022–present Pascal Michaillat.
 % Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -107,21 +107,6 @@
                 inner sep=3pt, text width=31mm},
   thead/.style={draw, line width=0.5pt, fill=gray!15, align=center, font=\scriptsize\bfseries,
                 inner sep=3pt, text width=31mm},
-}
-
-% \media{file}{width}{height}{description}: the image in figures/ if present,
-% otherwise a placeholder box naming the file.
-\NewDocumentCommand{\media}{m m m m}{%
-  \IfFileExists{figures/#1}{%
-    \includegraphics[width=#2, height=#3, keepaspectratio]{figures/#1}%
-  }{%
-    \begin{tikzpicture}
-      \node[draw=gray, dashed, line width=0.5pt, fill=gray!6, minimum width=#2,
-            minimum height=#3, text width=#2-12pt, align=center, inner sep=6pt,
-            font=\footnotesize\color{gray}] {%
-        \textsc{media}\\[2pt]#4\\[3pt]{\tiny\ttfamily #1}};
-    \end{tikzpicture}%
-  }%
 }
 
 % ---- Lists ----

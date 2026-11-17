@@ -131,15 +131,8 @@ Database & Supabase: Postgres 17, Auth, Storage & Single source of truth \\
 
 Fixture is the app a team uses every day. Its main constraint is adoption: a club cannot ask
 thirty students to make accounts before they can say whether they are coming to practice, so
-joining has to take seconds. Figure~\ref{f:fixture} shows its main screens.
-
-\begin{figure}[t]
-\subcaptionbox{Schedule}{\media{fixture-schedule.png}{0.225\linewidth}{58mm}{Season schedule with availability}}\hfill
-\subcaptionbox{Event}{\media{fixture-event.png}{0.225\linewidth}{58mm}{An event with team responses}}\hfill
-\subcaptionbox{Reminder}{\media{fixture-reminder.png}{0.225\linewidth}{58mm}{SMS reminder composer}}\hfill
-\subcaptionbox{Attendance}{\media{fixture-dashboard.png}{0.225\linewidth}{58mm}{Captain attendance dashboard}}
-\caption{Fixture by SLLAB on iOS}\label{f:fixture}
-\end{figure}
+joining has to take seconds. Fixture is on the App Store as Fixture Management:
+\url{https://apps.apple.com/us/app/fixture-management/id6812923949}.
 
 \subsection{Joining}
 
@@ -219,18 +212,11 @@ Removing a school, team or season is refused while anything still belongs to it.
 
 \subsection{Club sites}
 
-The UC San Diego site at \code{ucsdmcs.com} only reads public data (Figure~\ref{f:site}). It lists
+The UC San Diego site, live at \url{https://www.ucsdmcs.com}, only reads public data. It lists
 each game with the opponent's crest, home or away, the field and the result, under a season
 summary of record, streak, home and away records and goal difference. It also carries the roster,
 tryout information and the club's description. The schedule is published as an iCalendar feed
 \citep{RFC5545}, so new games appear in subscribers' calendars.
-
-\begin{figure}[H]
-\subcaptionbox{Schedule and scores, desktop}{\media{site-schedule.png}{0.63\linewidth}{56mm}{Schedule and scores}}\hfill
-\subcaptionbox{Standings, mobile}{\media{site-mobile.png}{0.3\linewidth}{56mm}{Standings}}
-\caption{UCSDMCS by SLLAB}\label{f:site}
-\note{The site is live at \url{https://www.ucsdmcs.com}.}
-\end{figure}
 
 \paragraph{Caching} Database reads are cached for five minutes, so most visits never reach the
 database and a dashboard change shows within five minutes. Standings come from the league's
@@ -336,14 +322,9 @@ practices. Section~\ref{s:roadmap} describes how each changes.
 
 Film turns a phone into an unattended camera operator. The phone records on its ultra-wide
 camera while a detection model finds play in the frame, and a motorized base turns to keep it
-centered (Figure~\ref{f:hardware}).
-
-\begin{figure}[H]
-\subcaptionbox{Mount with phone}{\media{mount.jpg}{0.31\linewidth}{48mm}{The assembled mount}}\hfill
-\subcaptionbox{Controller board}{\media{pcb.jpg}{0.31\linewidth}{48mm}{The assembled PCB}}\hfill
-\subcaptionbox{Tracking test}{\media{tracking.png}{0.31\linewidth}{48mm}{A frame from a tracking test}}
-\caption{Hardware by SLLAB}\label{f:hardware}
-\end{figure}
+centered. The firmware, schematic, board files, parts list and CAD, with photos of the mount and
+a tracking test, are in the repository's hardware documentation:
+\url{https://github.com/luciusscala/sllab/tree/main/hardware}.
 
 \subsection{The control loop}
 
