@@ -209,6 +209,24 @@ body {
   stroke-width: 1;
 }
 
+.flow-line-soon {
+  stroke-opacity: 0.1;
+  stroke-dasharray: 3 4;
+}
+
+/* Outputs still to come: dimmed, with a mono Soon tag. */
+.flow-soon {
+  opacity: 0.5;
+}
+
+.flow-tag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  fill: var(--muted);
+}
+
 .flow-card {
   fill: color-mix(in srgb, var(--fg) 3%, var(--bg));
   stroke: var(--fg);

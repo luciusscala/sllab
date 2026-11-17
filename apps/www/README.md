@@ -6,7 +6,7 @@ Built with Next.js 16, React 19 and Tailwind CSS 4. It has no backend and no env
 
 ## Pages
 
-- **Home** (`/`): the whole site, in one viewport with nothing to scroll. One diagram (`components/flow-graphic.tsx`): Fixture, Film and the league feed on the left, sllab in the middle, and what a club gets on the right (availability and attendance, live standings and rankings, game film on YouTube, text reminders). Pulses of light run from each source through the middle to each output. It is plain SVG with CSS animation, so it needs no script; phones get a taller layout, and reduced motion shows it still. `/contact` redirects here.
+- **Home** (`/`): the whole site, in one viewport with nothing to scroll. One diagram (`components/flow-graphic.tsx`): Fixture, Film and the league feed on the left, sllab in the middle, and what a club gets on the right (availability and attendance, live standings and rankings, game film on YouTube, text reminders, the public club website, and, marked Soon, social media posts, dues, travel, and gear and equipment). Pulses of light run from each source through the middle to each output. It is plain SVG with CSS animation, so it needs no script; phones get a taller layout, and reduced motion shows it still. `/contact` redirects here.
 - **Fixture's policies** (`/fixture/privacy`, `/fixture/terms`, `/fixture/support`): the privacy policy, terms and support page for [Fixture by SLLAB](../fixture-ios), linked from the App Store listing and from club sites. They stay because Apple requires them.
 
 The site is dark only, with scroll-triggered reveal animations, and transitions between pages.

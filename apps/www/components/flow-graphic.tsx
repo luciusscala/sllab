@@ -6,7 +6,8 @@ import type { CSSProperties } from "react";
    Three sources on the left (Fixture, Film, the league), sllab in the
    middle, and what a club gets out of it on the right. A pulse of light
    runs from each source into the middle and out to each output, and the
-   output's dot lights as it lands.
+   output's dot lights as it lands. Outputs still to come are dimmed, on
+   dashed lines, marked Soon, and get no pulse.
 
    Plain SVG with CSS animation: a Server Component, no script. Wide
    screens read left to right; phones get a taller layout of the same
@@ -21,18 +22,25 @@ const SOURCES: { label: string; detail: string; icon: Icon }[] = [
   { label: "League", detail: "Results and fixtures", icon: "trophy" },
 ];
 
-const OUTPUTS = [
-  "Availability and attendance",
-  "Live standings and rankings",
-  "Game film on YouTube",
-  "Reminders by text",
+const OUTPUTS: { label: string; soon?: boolean }[] = [
+  { label: "Availability and attendance" },
+  { label: "Live standings and rankings" },
+  { label: "Game film on YouTube" },
+  { label: "Reminders by text" },
+  { label: "Public club website" },
+  { label: "Social media posts", soon: true },
+  { label: "Dues", soon: true },
+  { label: "Travel", soon: true },
+  { label: "Gear and equipment", soon: true },
 ];
+
+const LIVE = OUTPUTS.filter((o) => !o.soon).length;
 
 /** One pass of a pulse: it travels for the first 40% of this, then waits. */
 const CYCLE = 4;
 const TRAVEL = CYCLE * 0.4;
 const sourceDelay = (i: number) => (i * CYCLE) / SOURCES.length;
-const outputDelay = (i: number) => TRAVEL + (i * CYCLE) / OUTPUTS.length;
+const outputDelay = (i: number) => TRAVEL + (i * CYCLE) / LIVE;
 
 type Point = { x: number; y: number };
 type Box = { x: number; y: number; w: number; h: number };
@@ -53,7 +61,7 @@ const mid = (b: Box): Point => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
 function wide(): Layout {
   const sources = [100, 200, 300].map((cy) => ({ x: 0, y: cy - 32, w: 248, h: 64 }));
   const hub = { x: 432, y: 152, w: 96, h: 96 };
-  const outputs = [65, 155, 245, 335].map((cy) => ({ x: 712, y: cy - 26, w: 248, h: 52 }));
+  const outputs = OUTPUTS.map((_, i) => ({ x: 712, y: 3 + i * 44, w: 248, h: 36 }));
   const c = mid(hub);
   return {
     width: 960,
@@ -74,14 +82,14 @@ function wide(): Layout {
 }
 
 function tall(): Layout {
-  const sources = [0, 126, 252].map((x) => ({ x, y: 0, w: 108, h: 88 }));
-  const hub = { x: 136, y: 196, w: 88, h: 88 };
-  const outputs = [404, 468, 532, 596].map((y) => ({ x: 48, y, w: 312, h: 48 }));
+  const sources = [0, 126, 252].map((x) => ({ x, y: 0, w: 108, h: 80 }));
+  const hub = { x: 140, y: 168, w: 80, h: 80 };
+  const outputs = OUTPUTS.map((_, i) => ({ x: 48, y: 332 + i * 42, w: 312, h: 34 }));
   const c = mid(hub);
   const bottom = hub.y + hub.h;
   return {
     width: 360,
-    height: 644,
+    height: 706,
     sources,
     hub,
     outputs,
@@ -91,7 +99,7 @@ function tall(): Layout {
     }),
     outPaths: outputs.map((o) => {
       const y = mid(o).y;
-      return `M${c.x} ${bottom} C${c.x} ${bottom + 56} 20 ${bottom + 40} 20 ${bottom + 96} L20 ${y - 12} Q20 ${y} 32 ${y} L${o.x} ${y}`;
+      return `M${c.x} ${bottom} C${c.x} ${bottom + 48} 20 ${bottom + 32} 20 ${bottom + 80} L20 ${y - 12} Q20 ${y} 32 ${y} L${o.x} ${y}`;
     }),
     vertical: true,
   };
@@ -117,20 +125,23 @@ function Diagram({ layout, className }: { layout: Layout; className: string }) {
       viewBox={`0 0 ${layout.width} ${layout.height}`}
       className={`flow ${className}`}
       role="img"
-      aria-label="Fixture, Film and the league feed into sllab, which produces availability and attendance, live standings and rankings, game film on YouTube, and text reminders."
+      aria-label="Fixture, Film and the league feed into sllab, which produces availability and attendance, live standings and rankings, game film on YouTube, and text reminders, and a public club website. Social media posts, dues, travel, and gear and equipment are coming soon."
     >
       {/* Resting lines */}
-      {[...layout.inPaths, ...layout.outPaths].map((d) => (
+      {layout.inPaths.map((d) => (
         <path key={d} d={d} className="flow-line" />
+      ))}
+      {layout.outPaths.map((d, i) => (
+        <path key={d} d={d} className={OUTPUTS[i].soon ? "flow-line flow-line-soon" : "flow-line"} />
       ))}
 
       {/* Pulses */}
       {layout.inPaths.map((d, i) => (
         <Pulse key={d} d={d} style={delay(sourceDelay(i))} />
       ))}
-      {layout.outPaths.map((d, i) => (
-        <Pulse key={d} d={d} style={delay(outputDelay(i))} />
-      ))}
+      {layout.outPaths.map((d, i) =>
+        OUTPUTS[i].soon ? null : <Pulse key={d} d={d} style={delay(outputDelay(i))} />,
+      )}
 
       {/* Sources */}
       {sources.map((box, i) => {
@@ -170,15 +181,23 @@ function Diagram({ layout, className }: { layout: Layout; className: string }) {
 
       {/* Outputs */}
       {outputs.map((box, i) => {
+        const { label, soon } = OUTPUTS[i];
         const y = mid(box).y;
         return (
-          <g key={OUTPUTS[i]}>
-            <rect {...rect(box)} rx={12} className="flow-card" />
+          <g key={label} className={soon ? "flow-soon" : undefined}>
+            <rect {...rect(box)} rx={10} className="flow-card" />
             <circle cx={box.x + 20} cy={y} r={3} className="flow-dot" />
-            <circle cx={box.x + 20} cy={y} r={3} className="flow-dot-lit" style={delay(outputDelay(i))} />
+            {!soon && (
+              <circle cx={box.x + 20} cy={y} r={3} className="flow-dot-lit" style={delay(outputDelay(i))} />
+            )}
             <text x={box.x + 34} y={y + 5} className="flow-output">
-              {OUTPUTS[i]}
+              {label}
             </text>
+            {soon && (
+              <text x={box.x + box.w - 16} y={y + 4} textAnchor="end" className="flow-tag">
+                Soon
+              </text>
+            )}
           </g>
         );
       })}
