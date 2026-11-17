@@ -1,6 +1,6 @@
 # Write-up
 
-A technical write-up of SLLAB: the architecture, the data model, Fixture by SLLAB, UCSDMCS by SLLAB, Film by SLLAB and its tracking mount, engineering practice, and the roadmap.
+A technical write-up of SLLAB: the architecture, Fixture by SLLAB on iOS and the web, the club sites, the data model and its access rules, Film by SLLAB and its tracking mount, engineering practice, and the roadmap.
 
 - **Read it:** [`sllab.pdf`](sllab.pdf)
 - **Source:** [`sllab.tex`](sllab.tex). The diagrams are drawn in the source with TikZ; there are no image files for them.

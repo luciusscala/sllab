@@ -10,7 +10,7 @@ It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.app
 
 **Signing in**
 - Enter the team code from your captain, then say whether you're on the team or just looking.
-- Players sign in with their phone number and a texted code. No password. A number the team already knows is recognised and put straight back on the roster; a new one is asked for a name, position, class and number, and the captains confirm them.
+- Players sign in with their phone number and a texted code. No password. A number the team already knows is recognised and put straight back on the roster; a new one is asked for a name, position, class and number, and is on the team straight away. Captains remove anyone who shouldn't be there.
 - Guests get the schedule, read-only, with no number asked.
 - Returning players are asked once a season whether they're playing, and can leave the team themselves. Leaving keeps them on the roster but takes them out of reminders, response lists and attendance until they rejoin.
 
@@ -22,7 +22,7 @@ It's part of [SLLAB](../../README.md) and is [on the App Store](https://apps.app
 - Create games and practices, including a repeating practice schedule: pick the weekdays and a date range, and every session is created at once.
 - Edit or delete any event.
 - See each event's responses, grouped into going, not going and no response. People who have left are left out.
-- Members: confirm or remove new joins, remove or reactivate players, see who hasn't responded to the last eight events, and add a phone number ahead of time so someone arrives already on the team with the right role. Captains can also make someone a captain or coach.
+- Members: remove or reactivate players, see who hasn't responded to the last eight events, and add a phone number ahead of time so someone arrives already on the team with the right role. Captains can also make someone a captain or coach.
 - Text a reminder to chosen players, filtered by response. Phone numbers are looked up on the server and never sent to the app.
 - Track attendance across the season, counting each player only over the stretches they were on the team. Players are ranked by an issue score that weighs not responding 1.5 times more than declining, since silence is harder for a captain to plan around than a no. Each player's page lists the events they attended and the ones they missed, and why.
 
